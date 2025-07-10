@@ -108,7 +108,7 @@ const requestForm = ref({
   body: {
     type: 'raw',
     raw: '',
-    formData: [{ key: '', value: '', enabled: true }],
+    formData: [{ key: '', value: '', type: 'text', enabled: true, description: '', files: [] }],
     urlencoded: [{ key: '', value: '', enabled: true }]
   }
 })

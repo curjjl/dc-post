@@ -73,9 +73,12 @@ class HttpService {
    * @returns {Object} axios配置
    */
   buildAxiosConfig(requestConfig) {
+    // 使用requestUrl（已正确编码）或回退到url
+    const targetUrl = requestConfig.requestUrl || requestConfig.url
+
     const config = {
       method: requestConfig.method.toLowerCase(),
-      url: this.processUrl(requestConfig.url),
+      url: this.processUrl(targetUrl),
       timeout: 30000, // 30秒超时
       cancelToken: this.cancelTokenSource.token,
       validateStatus: () => true, // 不要自动抛出错误
@@ -83,8 +86,9 @@ class HttpService {
       headers: {}
     }
 
-    // 处理Query参数
-    if (requestConfig.queryParams) {
+    // 如果使用requestUrl，则不需要再处理Query参数（已包含在URL中）
+    // 如果使用原始url，则需要处理Query参数
+    if (!requestConfig.requestUrl && requestConfig.queryParams) {
       config.params = this.buildParams(requestConfig.queryParams)
     }
 
@@ -194,10 +198,22 @@ class HttpService {
         const formData = new FormData()
         body.formData.forEach(item => {
           if (item.enabled && item.key) {
-            formData.append(item.key, item.value)
+            if (item.type === 'file' && item.files && item.files.length > 0) {
+              // 处理文件上传
+              item.files.forEach(fileInfo => {
+                if (fileInfo.originFileObj) {
+                  formData.append(item.key, fileInfo.originFileObj, fileInfo.name)
+                }
+              })
+            } else {
+              // 处理普通文本字段
+              formData.append(item.key, item.value || '')
+            }
           }
         })
         config.data = formData
+        // 让浏览器自动设置Content-Type，包含boundary
+        delete config.headers['Content-Type']
         break
         
       case 'x-www-form-urlencoded':

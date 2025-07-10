@@ -39,7 +39,7 @@
 
     <!-- Form Data -->
     <div v-else-if="body.type === 'form-data'" class="form-data">
-      <ParamsTable
+      <FormDataTable
         :params="body.formData"
         placeholder-key="字段名"
         placeholder-value="字段值"
@@ -65,6 +65,7 @@ import { FormatPainterOutlined } from '@ant-design/icons-vue'
 import { message } from 'ant-design-vue'
 import * as monaco from 'monaco-editor'
 import ParamsTable from './ParamsTable.vue'
+import FormDataTable from './FormDataTable.vue'
 
 const props = defineProps({
   body: {
@@ -72,7 +73,7 @@ const props = defineProps({
     default: () => ({
       type: 'raw',
       raw: '',
-      formData: [{ key: '', value: '', enabled: true }],
+      formData: [{ key: '', value: '', type: 'text', enabled: true, description: '', files: [] }],
       urlencoded: [{ key: '', value: '', enabled: true }]
     })
   }
