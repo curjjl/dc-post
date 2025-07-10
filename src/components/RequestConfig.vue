@@ -108,7 +108,7 @@ const requestForm = ref({
   body: {
     type: 'raw',
     raw: '',
-    formData: [{ key: '', value: '', type: 'text', enabled: true, description: '', files: [] }],
+    formData: [{ key: '', value: '', enabled: true }],
     urlencoded: [{ key: '', value: '', enabled: true }]
   }
 })
@@ -185,9 +185,10 @@ const parseUrlParams = (url) => {
   }
 }
 
-// 构建完整的URL（包含查询参数）
+// 构建完整的URL（包含查询参数）- 用于显示，保持可读性
 const buildFullUrl = () => {
-  const baseUrl = requestForm.value.url
+  // 对于显示，也处理环境变量，但不编码
+  let baseUrl = processEnvironmentVariables(requestForm.value.url)
   if (!baseUrl || !baseUrl.trim()) {
     return ''
   }
@@ -200,11 +201,55 @@ const buildFullUrl = () => {
     return baseUrl
   }
 
+  // 对于显示URL，不进行编码，保持原始可读性
   const queryString = enabledParams
-    .map(param => `${encodeURIComponent(param.key.trim())}=${encodeURIComponent(param.value || '')}`)
+    .map(param => {
+      const key = param.key.trim()
+      // 对参数值也进行环境变量替换，但不编码
+      const value = processEnvironmentVariables(param.value || '')
+      return `${key}=${value}`
+    })
     .join('&')
 
   return baseUrl + (baseUrl.includes('?') ? '&' : '?') + queryString
+}
+
+// 构建用于实际HTTP请求的URL（完全编码）
+const buildRequestUrl = () => {
+  // 先处理环境变量替换
+  let baseUrl = processEnvironmentVariables(requestForm.value.url)
+  if (!baseUrl || !baseUrl.trim()) {
+    return ''
+  }
+
+  const enabledParams = requestForm.value.queryParams.filter(param =>
+    param.enabled && param.key && param.key.trim()
+  )
+
+  if (enabledParams.length === 0) {
+    return baseUrl
+  }
+
+  // 对于实际请求，完全编码所有参数
+  const queryString = enabledParams
+    .map(param => {
+      // 对参数值也进行环境变量替换
+      const processedValue = processEnvironmentVariables(param.value || '')
+      return `${encodeURIComponent(param.key.trim())}=${encodeURIComponent(processedValue)}`
+    })
+    .join('&')
+
+  return baseUrl + (baseUrl.includes('?') ? '&' : '?') + queryString
+}
+
+// 处理环境变量替换
+const processEnvironmentVariables = (text) => {
+  if (!text) return text
+
+  return text.replace(/\{\{(\w+)\}\}/g, (match, varName) => {
+    const envVars = JSON.parse(localStorage.getItem('api_env_variables') || '{}')
+    return envVars[varName] || match
+  })
 }
 
 // 处理URL输入变化
@@ -260,10 +305,12 @@ const sendRequest = () => {
   }
 
   loading.value = true
-  
-  // 构建请求数据
+
+  // 构建请求数据，使用正确编码的URL用于实际请求
   const requestData = {
     ...requestForm.value,
+    // 使用buildRequestUrl来获取正确编码的URL用于实际HTTP请求
+    requestUrl: buildRequestUrl(),
     timestamp: Date.now(),
     id: Date.now().toString()
   }
@@ -272,7 +319,7 @@ const sendRequest = () => {
   saveToHistory(requestData)
 
   emit('send-request', requestData)
-  
+
   setTimeout(() => {
     loading.value = false
   }, 100)

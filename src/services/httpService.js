@@ -73,12 +73,14 @@ class HttpService {
    * @returns {Object} axios配置
    */
   buildAxiosConfig(requestConfig) {
-    // 使用requestUrl（已正确编码）或回退到url
+    // 使用requestUrl（已正确编码和处理环境变量）或回退到url
     const targetUrl = requestConfig.requestUrl || requestConfig.url
 
     const config = {
       method: requestConfig.method.toLowerCase(),
-      url: this.processUrl(targetUrl),
+      // 如果有requestUrl，说明已经处理过环境变量，直接使用
+      // 否则需要处理环境变量
+      url: requestConfig.requestUrl ? targetUrl : this.processUrl(targetUrl),
       timeout: 30000, // 30秒超时
       cancelToken: this.cancelTokenSource.token,
       validateStatus: () => true, // 不要自动抛出错误
