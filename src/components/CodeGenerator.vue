@@ -551,4 +551,42 @@ onMounted(() => {
 .code-container::-webkit-scrollbar-thumb:hover {
   background: #a8a8a8;
 }
+
+/* 深色主题样式 */
+[data-theme="dark"] .language-selector {
+  border-bottom: 1px solid #303030;
+}
+
+[data-theme="dark"] .code-title {
+  color: #fff;
+}
+
+[data-theme="dark"] .code-container {
+  border-color: #434343;
+  background: #1f1f1f;
+}
+
+[data-theme="dark"] .code-container pre {
+  color: #fff;
+}
+
+[data-theme="dark"] .options-section {
+  background: #1f1f1f;
+}
+
+[data-theme="dark"] .actions {
+  border-top: 1px solid #303030;
+}
+
+[data-theme="dark"] .code-container::-webkit-scrollbar-track {
+  background: #262626;
+}
+
+[data-theme="dark"] .code-container::-webkit-scrollbar-thumb {
+  background: #434343;
+}
+
+[data-theme="dark"] .code-container::-webkit-scrollbar-thumb:hover {
+  background: #595959;
+}
 </style>

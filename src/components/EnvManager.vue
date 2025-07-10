@@ -503,4 +503,45 @@ onMounted(() => {
 :deep(.ant-input-status-error) {
   border-color: #ff4d4f;
 }
+
+/* 深色主题样式 */
+[data-theme="dark"] .env-selector {
+  border-bottom: 1px solid #303030;
+}
+
+[data-theme="dark"] .preview-section {
+  background: #1f1f1f;
+}
+
+[data-theme="dark"] .preview-section h4 {
+  color: #fff;
+}
+
+[data-theme="dark"] .example-label {
+  color: #fff;
+}
+
+[data-theme="dark"] .example-item code {
+  background: #262626;
+  color: #fff;
+}
+
+[data-theme="dark"] .actions {
+  border-top: 1px solid #303030;
+}
+
+[data-theme="dark"] :deep(.ant-input) {
+  background: #1f1f1f;
+  border-color: #434343;
+  color: #fff;
+}
+
+[data-theme="dark"] :deep(.ant-input:hover) {
+  border-color: #177ddc;
+}
+
+[data-theme="dark"] :deep(.ant-input:focus) {
+  border-color: #177ddc;
+  box-shadow: 0 0 0 2px rgba(23, 125, 220, 0.2);
+}
 </style>

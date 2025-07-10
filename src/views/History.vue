@@ -642,4 +642,84 @@ onUnmounted(() => {
 .history-content::-webkit-scrollbar-thumb:hover {
   background: #a8a8a8;
 }
+
+/* 深色主题样式 */
+[data-theme="dark"] .history-page {
+  background: #000;
+}
+
+[data-theme="dark"] .header {
+  background: #141414;
+  border-bottom: 1px solid #303030;
+}
+
+[data-theme="dark"] .back-btn {
+  color: #8c8c8c;
+}
+
+[data-theme="dark"] .back-btn:hover {
+  color: #177ddc;
+}
+
+[data-theme="dark"] .title {
+  color: #fff;
+}
+
+[data-theme="dark"] .search-bar {
+  background: #141414;
+  border-bottom: 1px solid #303030;
+}
+
+[data-theme="dark"] .stats {
+  color: #8c8c8c;
+}
+
+[data-theme="dark"] .history-item {
+  background: #141414;
+  border-color: #303030;
+}
+
+[data-theme="dark"] .history-item:hover {
+  border-color: #434343;
+}
+
+[data-theme="dark"] .url {
+  color: #fff;
+}
+
+[data-theme="dark"] .detail-label {
+  color: #8c8c8c;
+}
+
+[data-theme="dark"] .detail-value {
+  color: #fff;
+}
+
+[data-theme="dark"] .preview-label {
+  color: #8c8c8c;
+}
+
+[data-theme="dark"] .more-indicator {
+  color: #8c8c8c;
+}
+
+[data-theme="dark"] .loading-indicator {
+  color: #8c8c8c;
+}
+
+[data-theme="dark"] .loading-indicator p {
+  color: #8c8c8c;
+}
+
+[data-theme="dark"] .history-content::-webkit-scrollbar-track {
+  background: #1f1f1f;
+}
+
+[data-theme="dark"] .history-content::-webkit-scrollbar-thumb {
+  background: #434343;
+}
+
+[data-theme="dark"] .history-content::-webkit-scrollbar-thumb:hover {
+  background: #595959;
+}
 </style>

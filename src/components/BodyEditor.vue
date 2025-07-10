@@ -262,4 +262,13 @@ onUnmounted(() => {
 :deep(.ant-radio-button-wrapper:last-child) {
   border-radius: 0 6px 6px 0;
 }
+
+/* 深色主题样式 */
+[data-theme="dark"] .body-type-selector {
+  border-bottom: 1px solid #303030;
+}
+
+[data-theme="dark"] .raw-editor {
+  border-color: #434343;
+}
 </style>

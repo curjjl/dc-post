@@ -402,4 +402,36 @@ defineExpose({
 .params-card :deep(.ant-tabs-tab) {
   padding: 8px 16px;
 }
+
+/* 深色主题样式 */
+[data-theme="dark"] .config-card {
+  background: #141414;
+  border-color: #303030;
+}
+
+[data-theme="dark"] .params-card {
+  background: #141414;
+  border-color: #303030;
+}
+
+[data-theme="dark"] .params-card :deep(.ant-card-head) {
+  background: #1f1f1f;
+  border-color: #303030;
+}
+
+[data-theme="dark"] .params-card :deep(.ant-tabs-nav) {
+  background: #1f1f1f;
+}
+
+[data-theme="dark"] .params-card :deep(.ant-tabs-tab) {
+  color: #fff;
+}
+
+[data-theme="dark"] .params-card :deep(.ant-tabs-tab:hover) {
+  color: #177ddc;
+}
+
+[data-theme="dark"] .params-card :deep(.ant-tabs-tab-active) {
+  color: #177ddc;
+}
 </style>

@@ -249,4 +249,33 @@ initTheme()
   max-width: 1200px;
   margin: 0 auto;
 }
+
+/* 深色主题样式 */
+[data-theme="dark"] .header {
+  background: #141414;
+  border-bottom: 1px solid #303030;
+}
+
+[data-theme="dark"] .logo {
+  color: #177ddc;
+}
+
+[data-theme="dark"] .history-sider,
+[data-theme="dark"] .response-sider {
+  background: #141414 !important;
+  border-left: 1px solid #303030;
+  border-right: 1px solid #303030;
+}
+
+[data-theme="dark"] .sider-header {
+  border-bottom: 1px solid #303030;
+}
+
+[data-theme="dark"] .sider-header h3 {
+  color: #fff;
+}
+
+[data-theme="dark"] .main-content {
+  background: #000;
+}
 </style>

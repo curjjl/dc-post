@@ -179,4 +179,13 @@ const handleOAuthFlow = () => {
 :deep(.ant-empty) {
   margin: 20px 0;
 }
+
+/* 深色主题样式 */
+[data-theme="dark"] .oauth-hint {
+  color: #8c8c8c;
+}
+
+[data-theme="dark"] .auth-preview {
+  color: #fff;
+}
 </style>

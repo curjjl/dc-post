@@ -440,4 +440,31 @@ onUnmounted(() => {
   justify-content: center;
   height: 200px;
 }
+
+/* 深色主题样式 */
+[data-theme="dark"] .response-status {
+  background: #1f1f1f;
+}
+
+[data-theme="dark"] .duration,
+[data-theme="dark"] .size {
+  color: #8c8c8c;
+}
+
+[data-theme="dark"] .header-value {
+  background: #262626;
+  color: #fff;
+}
+
+[data-theme="dark"] .cookie-details span {
+  color: #8c8c8c;
+}
+
+[data-theme="dark"] .loading-container {
+  color: #fff;
+}
+
+[data-theme="dark"] .loading-container p {
+  color: #8c8c8c;
+}
 </style>

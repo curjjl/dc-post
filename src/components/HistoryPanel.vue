@@ -361,4 +361,41 @@ onMounted(() => {
 .history-list::-webkit-scrollbar-thumb:hover {
   background: #a8a8a8;
 }
+
+/* 深色主题样式 */
+[data-theme="dark"] .history-item {
+  border-bottom: 1px solid #303030;
+}
+
+[data-theme="dark"] .history-item:hover {
+  background-color: #262626;
+}
+
+[data-theme="dark"] .timestamp {
+  color: #8c8c8c;
+}
+
+[data-theme="dark"] .item-url {
+  color: #fff;
+}
+
+[data-theme="dark"] .duration {
+  color: #8c8c8c;
+}
+
+[data-theme="dark"] .panel-footer {
+  border-top: 1px solid #303030;
+}
+
+[data-theme="dark"] .history-list::-webkit-scrollbar-track {
+  background: #1f1f1f;
+}
+
+[data-theme="dark"] .history-list::-webkit-scrollbar-thumb {
+  background: #434343;
+}
+
+[data-theme="dark"] .history-list::-webkit-scrollbar-thumb:hover {
+  background: #595959;
+}
 </style>
