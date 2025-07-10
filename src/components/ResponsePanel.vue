@@ -219,21 +219,39 @@ const extractCookieAttribute = (parts, attribute) => {
 // 初始化响应体编辑器
 const initBodyEditor = () => {
   if (!bodyEditorContainer.value || bodyEditor) return
-  
-  const language = detectLanguage(responseBodyText.value)
-  
-  bodyEditor = monaco.editor.create(bodyEditorContainer.value, {
-    value: responseBodyText.value,
-    language,
-    theme: 'vs',
-    readOnly: true,
-    automaticLayout: true,
-    minimap: { enabled: false },
-    scrollBeyondLastLine: false,
-    fontSize: 12,
-    lineNumbers: 'on',
-    wordWrap: 'on'
-  })
+
+  try {
+    const language = detectLanguage(responseBodyText.value)
+
+    bodyEditor = monaco.editor.create(bodyEditorContainer.value, {
+      value: responseBodyText.value,
+      language,
+      theme: 'vs',
+      readOnly: true,
+      automaticLayout: true,
+      minimap: { enabled: false },
+      scrollBeyondLastLine: false,
+      fontSize: 12,
+      lineNumbers: 'on',
+      wordWrap: 'on',
+      // 禁用一些可能导致Worker问题的功能
+      quickSuggestions: false,
+      parameterHints: { enabled: false },
+      suggestOnTriggerCharacters: false,
+      acceptSuggestionOnEnter: 'off',
+      tabCompletion: 'off',
+      wordBasedSuggestions: false,
+      // 禁用语法检查相关功能
+      validate: false,
+      lint: {
+        enable: false
+      }
+    })
+  } catch (error) {
+    console.error('Failed to create Monaco editor:', error)
+    // 如果Monaco编辑器创建失败，回退到原始文本显示
+    bodyViewMode.value = 'raw'
+  }
 }
 
 // 检测语言类型

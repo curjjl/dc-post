@@ -125,31 +125,47 @@ const handleLanguageChange = () => {
 const initEditor = () => {
   if (!editorContainer.value || editor) return
 
-  editor = monaco.editor.create(editorContainer.value, {
-    value: props.body.raw || '',
-    language: rawLanguage.value,
-    theme: 'vs',
-    automaticLayout: true,
-    minimap: { enabled: false },
-    scrollBeyondLastLine: false,
-    fontSize: 14,
-    lineNumbers: 'on',
-    roundedSelection: false,
-    scrollbar: {
-      vertical: 'auto',
-      horizontal: 'auto'
-    },
-    wordWrap: 'on',
-    formatOnPaste: true,
-    formatOnType: true
-  })
+  try {
+    editor = monaco.editor.create(editorContainer.value, {
+      value: props.body.raw || '',
+      language: rawLanguage.value,
+      theme: 'vs',
+      automaticLayout: true,
+      minimap: { enabled: false },
+      scrollBeyondLastLine: false,
+      fontSize: 14,
+      lineNumbers: 'on',
+      roundedSelection: false,
+      scrollbar: {
+        vertical: 'auto',
+        horizontal: 'auto'
+      },
+      wordWrap: 'on',
+      formatOnPaste: true,
+      formatOnType: true,
+      // 禁用一些可能导致Worker问题的功能
+      quickSuggestions: false,
+      parameterHints: { enabled: false },
+      suggestOnTriggerCharacters: false,
+      acceptSuggestionOnEnter: 'off',
+      tabCompletion: 'off',
+      wordBasedSuggestions: false,
+      // 禁用语法检查相关功能
+      validate: false,
+      lint: {
+        enable: false
+      }
+    })
 
-  // 监听内容变化
-  editor.onDidChangeModelContent(() => {
-    const value = editor.getValue()
-    props.body.raw = value
-    updateBody()
-  })
+    // 监听内容变化
+    editor.onDidChangeModelContent(() => {
+      const value = editor.getValue()
+      props.body.raw = value
+      updateBody()
+    })
+  } catch (error) {
+    console.error('Failed to create Monaco editor:', error)
+  }
 }
 
 // 销毁编辑器

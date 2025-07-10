@@ -17,8 +17,22 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: false,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          monaco: ['monaco-editor']
+        }
+      }
+    }
   },
   optimizeDeps: {
-    include: ['monaco-editor']
+    include: [
+      'monaco-editor',
+      'axios'
+    ]
+  },
+  define: {
+    // 定义全局变量以支持Monaco Editor
+    global: 'globalThis',
   }
 })
