@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>环境变量替换测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .test-result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 3px;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+        }
+        textarea {
+            height: 100px;
+        }
+    </style>
+</head>
+<body>
+    <h1>环境变量替换功能测试</h1>
+    
+    <div class="test-section">
+        <h2>1. 设置测试环境变量</h2>
+        <button onclick="setupTestEnvironment()">设置测试环境变量</button>
+        <div id="env-setup-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>2. 测试URL环境变量替换</h2>
+        <p>输入包含环境变量的URL：</p>
+        <input type="text" id="test-url" value="{{baseUrl}}/api/{{version}}/users" placeholder="{{baseUrl}}/api/{{version}}/users">
+        <button onclick="testUrlReplacement()">测试URL替换</button>
+        <div id="url-test-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>3. 测试参数环境变量替换</h2>
+        <p>输入包含环境变量的参数值：</p>
+        <input type="text" id="test-param" value="{{apiKey}}" placeholder="{{apiKey}}">
+        <button onclick="testParamReplacement()">测试参数替换</button>
+        <div id="param-test-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>4. 查看当前环境变量</h2>
+        <button onclick="showCurrentEnvironment()">显示当前环境变量</button>
+        <div id="current-env-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>5. 清理测试数据</h2>
+        <button onclick="clearTestData()">清理测试数据</button>
+        <div id="clear-result"></div>
+    </div>
+
+    <script>
+        // 环境变量处理函数（复制自项目中的实现）
+        function processEnvironmentVariables(text) {
+            if (!text || typeof text !== 'string') return text;
+
+            return text.replace(/\{\{(\w+)\}\}/g, (match, varName) => {
+                try {
+                    const envVars = JSON.parse(localStorage.getItem('api_env_variables') || '{}');
+                    return envVars[varName] || match;
+                } catch (error) {
+                    console.error('获取环境变量失败:', error);
+                    return match;
+                }
+            });
+        }
+
+        // 设置测试环境变量
+        function setupTestEnvironment() {
+            const testEnvVars = {
+                baseUrl: 'https://api.example.com',
+                version: 'v1',
+                apiKey: 'test-api-key-12345',
+                token: 'bearer-token-67890'
+            };
+
+            localStorage.setItem('api_env_variables', JSON.stringify(testEnvVars));
+            
+            document.getElementById('env-setup-result').innerHTML = `
+                <div class="test-result success">
+                    ✅ 测试环境变量设置成功！<br>
+                    设置的变量：<br>
+                    ${Object.entries(testEnvVars).map(([key, value]) => `• ${key}: ${value}`).join('<br>')}
+                </div>
+            `;
+        }
+
+        // 测试URL替换
+        function testUrlReplacement() {
+            const testUrl = document.getElementById('test-url').value;
+            const originalUrl = testUrl;
+            const processedUrl = processEnvironmentVariables(testUrl);
+            
+            const isReplaced = originalUrl !== processedUrl;
+            const hasVariables = /\{\{(\w+)\}\}/g.test(originalUrl);
+            
+            let resultClass = 'info';
+            let resultText = '';
+            
+            if (!hasVariables) {
+                resultText = '⚠️ 输入的URL中没有环境变量';
+            } else if (isReplaced) {
+                resultClass = 'success';
+                resultText = `✅ 环境变量替换成功！<br>原始URL: ${originalUrl}<br>替换后: ${processedUrl}`;
+            } else {
+                resultClass = 'error';
+                resultText = `❌ 环境变量替换失败！<br>原始URL: ${originalUrl}<br>结果: ${processedUrl}`;
+            }
+            
+            document.getElementById('url-test-result').innerHTML = `
+                <div class="test-result ${resultClass}">
+                    ${resultText}
+                </div>
+            `;
+        }
+
+        // 测试参数替换
+        function testParamReplacement() {
+            const testParam = document.getElementById('test-param').value;
+            const originalParam = testParam;
+            const processedParam = processEnvironmentVariables(testParam);
+            
+            const isReplaced = originalParam !== processedParam;
+            const hasVariables = /\{\{(\w+)\}\}/g.test(originalParam);
+            
+            let resultClass = 'info';
+            let resultText = '';
+            
+            if (!hasVariables) {
+                resultText = '⚠️ 输入的参数中没有环境变量';
+            } else if (isReplaced) {
+                resultClass = 'success';
+                resultText = `✅ 参数环境变量替换成功！<br>原始参数: ${originalParam}<br>替换后: ${processedParam}`;
+            } else {
+                resultClass = 'error';
+                resultText = `❌ 参数环境变量替换失败！<br>原始参数: ${originalParam}<br>结果: ${processedParam}`;
+            }
+            
+            document.getElementById('param-test-result').innerHTML = `
+                <div class="test-result ${resultClass}">
+                    ${resultText}
+                </div>
+            `;
+        }
+
+        // 显示当前环境变量
+        function showCurrentEnvironment() {
+            try {
+                const envVars = JSON.parse(localStorage.getItem('api_env_variables') || '{}');
+                const envList = Object.entries(envVars);
+                
+                if (envList.length === 0) {
+                    document.getElementById('current-env-result').innerHTML = `
+                        <div class="test-result info">
+                            ⚠️ 当前没有设置任何环境变量
+                        </div>
+                    `;
+                } else {
+                    document.getElementById('current-env-result').innerHTML = `
+                        <div class="test-result info">
+                            📋 当前环境变量：<br>
+                            ${envList.map(([key, value]) => `• ${key}: ${value}`).join('<br>')}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                document.getElementById('current-env-result').innerHTML = `
+                    <div class="test-result error">
+                        ❌ 读取环境变量失败: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        // 清理测试数据
+        function clearTestData() {
+            localStorage.removeItem('api_env_variables');
+            document.getElementById('clear-result').innerHTML = `
+                <div class="test-result success">
+                    ✅ 测试数据已清理
+                </div>
+            `;
+        }
+
+        // 页面加载时显示当前环境变量
+        window.onload = function() {
+            showCurrentEnvironment();
+        };
+    </script>
+</body>
+</html>

@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { processEnvironmentVariables } from '@/utils/envUtils.js'
 
 /**
  * HTTP请求服务类
@@ -116,11 +117,7 @@ class HttpService {
    * @returns {string} 处理后的URL
    */
   processUrl(url) {
-    // 替换环境变量 {{variable}}
-    return url.replace(/\{\{(\w+)\}\}/g, (match, varName) => {
-      const envVars = JSON.parse(localStorage.getItem('api_env_variables') || '{}')
-      return envVars[varName] || match
-    })
+    return processEnvironmentVariables(url)
   }
 
   /**

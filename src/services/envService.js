@@ -15,10 +15,10 @@ class EnvService {
   getVariables() {
     try {
       const stored = localStorage.getItem(this.storageKey)
-      return stored ? JSON.parse(stored) : this.getDefaultVariables()
+      return stored ? JSON.parse(stored) : { ...this.getDefaultVariables() }
     } catch (error) {
       console.error('获取环境变量失败:', error)
-      return this.getDefaultVariables()
+      return { ...this.getDefaultVariables() }
     }
   }
 
@@ -176,15 +176,11 @@ class EnvService {
    */
   getAllEnvironments() {
     try {
-      const stored = localStorage.getItem('api_environments')
-      return stored ? JSON.parse(stored) : {
-        default: this.getDefaultVariables()
-      }
+      const stored = localStorage.getItem(this.storageKey)
+      return stored ? JSON.parse(stored) :this.getDefaultVariables()
     } catch (error) {
       console.error('获取环境配置失败:', error)
-      return {
-        default: this.getDefaultVariables()
-      }
+      return this.getDefaultVariables()
     }
   }
 
@@ -194,7 +190,7 @@ class EnvService {
    */
   saveEnvironments(environments) {
     try {
-      localStorage.setItem('api_environments', JSON.stringify(environments))
+      localStorage.setItem(this.storageKey, JSON.stringify(environments))
       this.notifyChange()
     } catch (error) {
       console.error('保存环境配置失败:', error)

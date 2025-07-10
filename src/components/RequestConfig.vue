@@ -83,10 +83,11 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, defineExpose, onMounted, watch } from 'vue'
 import ParamsTable from './ParamsTable.vue'
 import AuthConfig from './AuthConfig.vue'
 import BodyEditor from './BodyEditor.vue'
+import { processEnvironmentVariables } from '@/utils/envUtils.js'
 
 const emit = defineEmits(['send-request'])
 
@@ -185,6 +186,8 @@ const parseUrlParams = (url) => {
   }
 }
 
+
+
 // 构建完整的URL（包含查询参数）- 用于显示，保持可读性
 const buildFullUrl = () => {
   // 对于显示，也处理环境变量，但不编码
@@ -240,16 +243,6 @@ const buildRequestUrl = () => {
     .join('&')
 
   return baseUrl + (baseUrl.includes('?') ? '&' : '?') + queryString
-}
-
-// 处理环境变量替换
-const processEnvironmentVariables = (text) => {
-  if (!text) return text
-
-  return text.replace(/\{\{(\w+)\}\}/g, (match, varName) => {
-    const envVars = JSON.parse(localStorage.getItem('api_env_variables') || '{}')
-    return envVars[varName] || match
-  })
 }
 
 // 处理URL输入变化

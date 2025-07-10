@@ -3,7 +3,7 @@
     <!-- 顶部导航栏 -->
     <a-layout-header class="header">
       <div class="header-content">
-        <h1 class="logo">Vue API Tester</h1>
+        <h1 class="logo">API Tester</h1>
         <div class="header-actions">
           <a-button type="text" @click="showEnvManager = true">
             <template #icon><SettingOutlined /></template>
