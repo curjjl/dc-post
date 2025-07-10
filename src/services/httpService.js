@@ -129,7 +129,10 @@ class HttpService {
     const params = {}
     queryParams.forEach(param => {
       if (param.enabled && param.key) {
-        params[param.key] = param.value
+        // 处理环境变量替换
+        const processedKey = processEnvironmentVariables(param.key)
+        const processedValue = processEnvironmentVariables(param.value)
+        params[processedKey] = processedValue
       }
     })
     return params
@@ -144,7 +147,10 @@ class HttpService {
     const headerObj = {}
     headers.forEach(header => {
       if (header.enabled && header.key) {
-        headerObj[header.key] = header.value
+        // 处理环境变量替换
+        const processedKey = processEnvironmentVariables(header.key)
+        const processedValue = processEnvironmentVariables(header.value)
+        headerObj[processedKey] = processedValue
       }
     })
     return headerObj
@@ -161,20 +167,27 @@ class HttpService {
     switch (auth.type) {
       case 'basic':
         if (auth.basic.username || auth.basic.password) {
-          const credentials = btoa(`${auth.basic.username}:${auth.basic.password}`)
+          // 处理环境变量替换
+          const processedUsername = processEnvironmentVariables(auth.basic.username)
+          const processedPassword = processEnvironmentVariables(auth.basic.password)
+          const credentials = btoa(`${processedUsername}:${processedPassword}`)
           config.headers.Authorization = `Basic ${credentials}`
         }
         break
-        
+
       case 'bearer':
         if (auth.bearer.token) {
-          config.headers.Authorization = `Bearer ${auth.bearer.token}`
+          // 处理环境变量替换
+          const processedToken = processEnvironmentVariables(auth.bearer.token)
+          config.headers.Authorization = `Bearer ${processedToken}`
         }
         break
-        
+
       case 'oauth2':
         if (auth.oauth2.accessToken) {
-          config.headers.Authorization = `Bearer ${auth.oauth2.accessToken}`
+          // 处理环境变量替换
+          const processedAccessToken = processEnvironmentVariables(auth.oauth2.accessToken)
+          config.headers.Authorization = `Bearer ${processedAccessToken}`
         }
         break
     }
@@ -190,23 +203,28 @@ class HttpService {
 
     switch (body.type) {
       case 'raw':
-        config.data = body.raw
+        // 处理环境变量替换
+        config.data = processEnvironmentVariables(body.raw)
         break
-        
+
       case 'form-data':
         const formData = new FormData()
         body.formData.forEach(item => {
           if (item.enabled && item.key) {
+            // 处理环境变量替换
+            const processedKey = processEnvironmentVariables(item.key)
+
             if (item.type === 'file' && item.files && item.files.length > 0) {
               // 处理文件上传
               item.files.forEach(fileInfo => {
                 if (fileInfo.originFileObj) {
-                  formData.append(item.key, fileInfo.originFileObj, fileInfo.name)
+                  formData.append(processedKey, fileInfo.originFileObj, fileInfo.name)
                 }
               })
             } else {
-              // 处理普通文本字段
-              formData.append(item.key, item.value || '')
+              // 处理普通文本字段，也需要处理环境变量
+              const processedValue = processEnvironmentVariables(item.value || '')
+              formData.append(processedKey, processedValue)
             }
           }
         })
@@ -214,12 +232,15 @@ class HttpService {
         // 让浏览器自动设置Content-Type，包含boundary
         delete config.headers['Content-Type']
         break
-        
+
       case 'x-www-form-urlencoded':
         const urlencoded = new URLSearchParams()
         body.urlencoded.forEach(item => {
           if (item.enabled && item.key) {
-            urlencoded.append(item.key, item.value)
+            // 处理环境变量替换
+            const processedKey = processEnvironmentVariables(item.key)
+            const processedValue = processEnvironmentVariables(item.value)
+            urlencoded.append(processedKey, processedValue)
           }
         })
         config.data = urlencoded

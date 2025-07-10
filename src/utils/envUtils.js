@@ -13,8 +13,9 @@ export const processEnvironmentVariables = (text) => {
 
   return text.replace(/\{\{(\w+)\}\}/g, (match, varName) => {
     try {
+      const currEnv = localStorage.getItem('api_current_env') || 'default'
       const envVars = JSON.parse(localStorage.getItem('api_env_variables') || '{}')
-      return envVars[varName] || match
+      return envVars[currEnv]?.[varName] || match
     } catch (error) {
       console.error('获取环境变量失败:', error)
       return match
@@ -51,7 +52,8 @@ export const processObjectEnvironmentVariables = (obj) => {
  */
 export const getCurrentEnvironmentVariables = () => {
   try {
-    return JSON.parse(localStorage.getItem('api_env_variables') || '{}')
+    const currEnv = localStorage.getItem('api_current_env') || 'default'
+    return JSON.parse(localStorage.getItem('api_env_variables') || '{}')?.currEnv
   } catch (error) {
     console.error('获取环境变量失败:', error)
     return {}

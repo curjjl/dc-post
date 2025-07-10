@@ -48,7 +48,7 @@
 
     <!-- 参数配置标签页 -->
     <a-card class="params-card">
-      <a-tabs v-model:activeKey="activeTab" type="card">
+      <a-tabs v-model:activeKey="activeTab">
         <!-- Query参数 -->
         <a-tab-pane key="query" tab="Query参数">
           <ParamsTable 
@@ -83,7 +83,7 @@
 </template>
 
 <script setup>
-import { ref, computed, defineExpose, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import ParamsTable from './ParamsTable.vue'
 import AuthConfig from './AuthConfig.vue'
 import BodyEditor from './BodyEditor.vue'
@@ -188,10 +188,10 @@ const parseUrlParams = (url) => {
 
 
 
-// 构建完整的URL（包含查询参数）- 用于显示，保持可读性
+// 构建完整的URL（包含查询参数）- 用于显示，保持原始格式
 const buildFullUrl = () => {
-  // 对于显示，也处理环境变量，但不编码
-  let baseUrl = processEnvironmentVariables(requestForm.value.url)
+  // 对于显示，不处理环境变量，保持原始格式
+  let baseUrl = requestForm.value.url
   if (!baseUrl || !baseUrl.trim()) {
     return ''
   }
@@ -204,12 +204,12 @@ const buildFullUrl = () => {
     return baseUrl
   }
 
-  // 对于显示URL，不进行编码，保持原始可读性
+  // 对于显示URL，不进行环境变量替换和编码，保持原始可读性
   const queryString = enabledParams
     .map(param => {
       const key = param.key.trim()
-      // 对参数值也进行环境变量替换，但不编码
-      const value = processEnvironmentVariables(param.value || '')
+      // 保持原始参数值，不进行环境变量替换
+      const value = param.value || ''
       return `${key}=${value}`
     })
     .join('&')
@@ -236,9 +236,10 @@ const buildRequestUrl = () => {
   // 对于实际请求，完全编码所有参数
   const queryString = enabledParams
     .map(param => {
-      // 对参数值也进行环境变量替换
+      // 对参数键和值都进行环境变量替换
+      const processedKey = processEnvironmentVariables(param.key.trim())
       const processedValue = processEnvironmentVariables(param.value || '')
-      return `${encodeURIComponent(param.key.trim())}=${encodeURIComponent(processedValue)}`
+      return `${encodeURIComponent(processedKey)}=${encodeURIComponent(processedValue)}`
     })
     .join('&')
 

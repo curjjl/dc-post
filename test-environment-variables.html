@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>环境变量解析功能测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #1890ff;
+            text-align: center;
+        }
+        h2 {
+            color: #333;
+            border-bottom: 2px solid #1890ff;
+            padding-bottom: 10px;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 15px;
+            border: 1px solid #d9d9d9;
+            border-radius: 6px;
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        textarea {
+            height: 100px;
+            resize: vertical;
+        }
+        button {
+            background-color: #1890ff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            background-color: #40a9ff;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+        .success {
+            background-color: #f6ffed;
+            border: 1px solid #b7eb8f;
+            color: #52c41a;
+        }
+        .error {
+            background-color: #fff2f0;
+            border: 1px solid #ffccc7;
+            color: #ff4d4f;
+        }
+        .info {
+            background-color: #e6f7ff;
+            border: 1px solid #91d5ff;
+            color: #1890ff;
+        }
+        .env-vars {
+            background-color: #fafafa;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+        .code-block {
+            background-color: #f5f5f5;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 环境变量解析功能测试</h1>
+    
+    <div class="container">
+        <h2>📋 测试说明</h2>
+        <p>此页面用于测试API调试工具中的环境变量解析功能。请按照以下步骤进行测试：</p>
+        <ol>
+            <li>首先设置测试环境变量</li>
+            <li>测试各种场景下的环境变量替换</li>
+            <li>验证结果是否符合预期</li>
+        </ol>
+    </div>
+
+    <div class="container">
+        <div class="test-section">
+            <h2>1. 设置测试环境变量</h2>
+            <div class="input-group">
+                <label>环境变量JSON（将保存到localStorage）:</label>
+                <textarea id="env-vars" placeholder='{"baseUrl": "https://api.example.com", "token": "abc123", "userId": "12345"}'></textarea>
+            </div>
+            <button onclick="setEnvironmentVariables()">设置环境变量</button>
+            <button onclick="loadEnvironmentVariables()">加载当前环境变量</button>
+            <div id="env-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>2. 测试URL环境变量替换</h2>
+            <div class="input-group">
+                <label>测试URL:</label>
+                <input type="text" id="test-url" placeholder="{{baseUrl}}/api/{{version}}/users/{{userId}}" value="{{baseUrl}}/api/{{version}}/users/{{userId}}">
+            </div>
+            <button onclick="testUrlReplacement()">测试URL替换</button>
+            <div id="url-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>3. 测试Query参数环境变量替换</h2>
+            <div class="input-group">
+                <label>参数键:</label>
+                <input type="text" id="param-key" placeholder="api_key" value="api_key">
+            </div>
+            <div class="input-group">
+                <label>参数值:</label>
+                <input type="text" id="param-value" placeholder="{{token}}" value="{{token}}">
+            </div>
+            <button onclick="testParamReplacement()">测试参数替换</button>
+            <div id="param-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>4. 测试Headers环境变量替换</h2>
+            <div class="input-group">
+                <label>Header名:</label>
+                <input type="text" id="header-key" placeholder="Authorization" value="Authorization">
+            </div>
+            <div class="input-group">
+                <label>Header值:</label>
+                <input type="text" id="header-value" placeholder="Bearer {{token}}" value="Bearer {{token}}">
+            </div>
+            <button onclick="testHeaderReplacement()">测试Header替换</button>
+            <div id="header-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>5. 测试请求体环境变量替换</h2>
+            <div class="input-group">
+                <label>JSON请求体:</label>
+                <textarea id="body-json" placeholder='{"user_id": "{{userId}}", "token": "{{token}}"}'>{
+  "user_id": "{{userId}}",
+  "token": "{{token}}",
+  "api_key": "{{apiKey}}"
+}</textarea>
+            </div>
+            <button onclick="testBodyReplacement()">测试请求体替换</button>
+            <div id="body-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>6. 综合测试</h2>
+            <button onclick="runComprehensiveTest()">运行综合测试</button>
+            <div id="comprehensive-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>7. 清理测试数据</h2>
+            <button onclick="clearTestData()">清理环境变量</button>
+            <div id="clear-result"></div>
+        </div>
+    </div>
+
+    <script>
+        // 环境变量处理函数（复制自项目实现）
+        function processEnvironmentVariables(text) {
+            if (!text || typeof text !== 'string') return text;
+
+            return text.replace(/\{\{(\w+)\}\}/g, (match, varName) => {
+                try {
+                    const envVars = JSON.parse(localStorage.getItem('api_env_variables') || '{}');
+                    return envVars[varName] || match;
+                } catch (error) {
+                    console.error('获取环境变量失败:', error);
+                    return match;
+                }
+            });
+        }
+
+        // 设置环境变量
+        function setEnvironmentVariables() {
+            const envVarsText = document.getElementById('env-vars').value;
+            try {
+                const envVars = JSON.parse(envVarsText);
+                localStorage.setItem('api_env_variables', JSON.stringify(envVars));
+                document.getElementById('env-result').innerHTML = `
+                    <div class="result success">
+                        ✅ 环境变量设置成功！<br>
+                        已设置变量: ${Object.keys(envVars).join(', ')}
+                    </div>
+                `;
+            } catch (error) {
+                document.getElementById('env-result').innerHTML = `
+                    <div class="result error">
+                        ❌ JSON格式错误: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        // 加载当前环境变量
+        function loadEnvironmentVariables() {
+            try {
+                const envVars = JSON.parse(localStorage.getItem('api_env_variables') || '{}');
+                document.getElementById('env-vars').value = JSON.stringify(envVars, null, 2);
+                document.getElementById('env-result').innerHTML = `
+                    <div class="result info">
+                        📋 当前环境变量已加载到编辑框
+                    </div>
+                `;
+            } catch (error) {
+                document.getElementById('env-result').innerHTML = `
+                    <div class="result error">
+                        ❌ 加载环境变量失败: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        // 测试URL替换
+        function testUrlReplacement() {
+            const testUrl = document.getElementById('test-url').value;
+            const originalUrl = testUrl;
+            const processedUrl = processEnvironmentVariables(testUrl);
+            
+            const isReplaced = originalUrl !== processedUrl;
+            const hasVariables = /\{\{(\w+)\}\}/g.test(originalUrl);
+            
+            let resultClass = 'info';
+            let resultText = '';
+            
+            if (!hasVariables) {
+                resultText = '⚠️ 输入的URL中没有环境变量';
+            } else if (isReplaced) {
+                resultClass = 'success';
+                resultText = `✅ URL环境变量替换成功！<br>原始: ${originalUrl}<br>替换后: ${processedUrl}`;
+            } else {
+                resultClass = 'error';
+                resultText = `❌ URL环境变量替换失败！<br>原始: ${originalUrl}<br>结果: ${processedUrl}`;
+            }
+            
+            document.getElementById('url-result').innerHTML = `
+                <div class="result ${resultClass}">
+                    ${resultText}
+                </div>
+            `;
+        }
+
+        // 测试参数替换
+        function testParamReplacement() {
+            const paramKey = document.getElementById('param-key').value;
+            const paramValue = document.getElementById('param-value').value;
+            
+            const processedKey = processEnvironmentVariables(paramKey);
+            const processedValue = processEnvironmentVariables(paramValue);
+            
+            const keyChanged = paramKey !== processedKey;
+            const valueChanged = paramValue !== processedValue;
+            
+            document.getElementById('param-result').innerHTML = `
+                <div class="result ${(keyChanged || valueChanged) ? 'success' : 'info'}">
+                    ${keyChanged || valueChanged ? '✅' : '📋'} 参数处理结果:<br>
+                    键: ${paramKey} → ${processedKey}<br>
+                    值: ${paramValue} → ${processedValue}
+                </div>
+            `;
+        }
+
+        // 测试Header替换
+        function testHeaderReplacement() {
+            const headerKey = document.getElementById('header-key').value;
+            const headerValue = document.getElementById('header-value').value;
+            
+            const processedKey = processEnvironmentVariables(headerKey);
+            const processedValue = processEnvironmentVariables(headerValue);
+            
+            const keyChanged = headerKey !== processedKey;
+            const valueChanged = headerValue !== processedValue;
+            
+            document.getElementById('header-result').innerHTML = `
+                <div class="result ${(keyChanged || valueChanged) ? 'success' : 'info'}">
+                    ${keyChanged || valueChanged ? '✅' : '📋'} Header处理结果:<br>
+                    ${processedKey}: ${processedValue}
+                </div>
+            `;
+        }
+
+        // 测试请求体替换
+        function testBodyReplacement() {
+            const bodyJson = document.getElementById('body-json').value;
+            const processedBody = processEnvironmentVariables(bodyJson);
+            
+            const isChanged = bodyJson !== processedBody;
+            
+            document.getElementById('body-result').innerHTML = `
+                <div class="result ${isChanged ? 'success' : 'info'}">
+                    ${isChanged ? '✅' : '📋'} 请求体处理结果:<br>
+                    <div class="code-block">${processedBody}</div>
+                </div>
+            `;
+        }
+
+        // 综合测试
+        function runComprehensiveTest() {
+            const testCases = [
+                { type: 'URL', input: '{{baseUrl}}/api/{{version}}/users' },
+                { type: 'Header', input: 'Bearer {{token}}' },
+                { type: 'Param', input: '{{userId}}' },
+                { type: 'Body', input: '{"id": "{{userId}}", "key": "{{apiKey}}"}' }
+            ];
+            
+            let results = '<h3>综合测试结果:</h3>';
+            
+            testCases.forEach(testCase => {
+                const processed = processEnvironmentVariables(testCase.input);
+                const isChanged = testCase.input !== processed;
+                results += `
+                    <div style="margin-bottom: 10px;">
+                        <strong>${testCase.type}:</strong><br>
+                        输入: <code>${testCase.input}</code><br>
+                        输出: <code>${processed}</code>
+                        ${isChanged ? ' ✅' : ' ⚠️'}
+                    </div>
+                `;
+            });
+            
+            document.getElementById('comprehensive-result').innerHTML = `
+                <div class="result info">
+                    ${results}
+                </div>
+            `;
+        }
+
+        // 清理测试数据
+        function clearTestData() {
+            localStorage.removeItem('api_env_variables');
+            document.getElementById('clear-result').innerHTML = `
+                <div class="result success">
+                    ✅ 环境变量已清理
+                </div>
+            `;
+        }
+
+        // 页面加载时设置默认环境变量
+        window.onload = function() {
+            const defaultEnvVars = {
+                "baseUrl": "https://api.example.com",
+                "version": "v1",
+                "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9",
+                "userId": "12345",
+                "apiKey": "sk-1234567890abcdef"
+            };
+            
+            document.getElementById('env-vars').value = JSON.stringify(defaultEnvVars, null, 2);
+        };
+    </script>
+</body>
+</html>

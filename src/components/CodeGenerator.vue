@@ -81,6 +81,7 @@ import { ref, watch, onMounted } from 'vue'
 import { CopyOutlined } from '@ant-design/icons-vue'
 import { message } from 'ant-design-vue'
 import envService from '@/services/envService.js'
+import { processEnvironmentVariables } from '@/utils/envUtils.js'
 
 const props = defineProps({
   visible: {
@@ -147,14 +148,17 @@ const generateCode = () => {
 const generateCurl = () => {
   const { method, url, headers, queryParams, body, auth } = props.requestData
   let code = `curl -X ${method}`
-  
+
   // 处理URL和查询参数
-  let fullUrl = envService.replaceVariables(url)
+  let fullUrl = processEnvironmentVariables(url)
   if (queryParams && queryParams.length > 0) {
     const params = new URLSearchParams()
     queryParams.forEach(param => {
       if (param.enabled && param.key) {
-        params.append(param.key, param.value)
+        // 处理环境变量替换
+        const processedKey = processEnvironmentVariables(param.key)
+        const processedValue = processEnvironmentVariables(param.value)
+        params.append(processedKey, processedValue)
       }
     })
     if (params.toString()) {
@@ -167,7 +171,10 @@ const generateCurl = () => {
   if (options.value.includeHeaders && headers) {
     headers.forEach(header => {
       if (header.enabled && header.key) {
-        code += ` \\\n  -H "${header.key}: ${header.value}"`
+        // 处理环境变量替换
+        const processedKey = processEnvironmentVariables(header.key)
+        const processedValue = processEnvironmentVariables(header.value)
+        code += ` \\\n  -H "${processedKey}: ${processedValue}"`
       }
     })
   }
@@ -175,21 +182,31 @@ const generateCurl = () => {
   // 处理认证
   if (options.value.includeAuth && auth && auth.type !== 'none') {
     if (auth.type === 'basic' && auth.basic.username) {
-      code += ` \\\n  -u "${auth.basic.username}:${auth.basic.password}"`
+      // 处理环境变量替换
+      const processedUsername = processEnvironmentVariables(auth.basic.username)
+      const processedPassword = processEnvironmentVariables(auth.basic.password)
+      code += ` \\\n  -u "${processedUsername}:${processedPassword}"`
     } else if (auth.type === 'bearer' && auth.bearer.token) {
-      code += ` \\\n  -H "Authorization: Bearer ${auth.bearer.token}"`
+      // 处理环境变量替换
+      const processedToken = processEnvironmentVariables(auth.bearer.token)
+      code += ` \\\n  -H "Authorization: Bearer ${processedToken}"`
     }
   }
 
   // 处理请求体
   if (body && ['POST', 'PUT', 'PATCH'].includes(method)) {
     if (body.type === 'raw' && body.raw) {
-      const escapedBody = body.raw.replace(/'/g, "\\'")
+      // 处理环境变量替换
+      const processedBody = processEnvironmentVariables(body.raw)
+      const escapedBody = processedBody.replace(/'/g, "\\'")
       code += ` \\\n  -d '${escapedBody}'`
     } else if (body.type === 'form-data' && body.formData) {
       body.formData.forEach(item => {
         if (item.enabled && item.key) {
-          code += ` \\\n  -F "${item.key}=${item.value}"`
+          // 处理环境变量替换
+          const processedKey = processEnvironmentVariables(item.key)
+          const processedValue = processEnvironmentVariables(item.value)
+          code += ` \\\n  -F "${processedKey}=${processedValue}"`
         }
       })
     }
@@ -202,18 +219,21 @@ const generateCurl = () => {
 const generateJavaScript = () => {
   const { method, url, headers, queryParams, body, auth } = props.requestData
   let code = ''
-  
+
   if (options.value.includeComments) {
     code += '// 发送HTTP请求\n'
   }
-  
+
   // 构建URL
-  let fullUrl = envService.replaceVariables(url)
+  let fullUrl = processEnvironmentVariables(url)
   if (queryParams && queryParams.length > 0) {
     const params = new URLSearchParams()
     queryParams.forEach(param => {
       if (param.enabled && param.key) {
-        params.append(param.key, param.value)
+        // 处理环境变量替换
+        const processedKey = processEnvironmentVariables(param.key)
+        const processedValue = processEnvironmentVariables(param.value)
+        params.append(processedKey, processedValue)
       }
     })
     if (params.toString()) {
@@ -229,24 +249,31 @@ const generateJavaScript = () => {
     code += `  headers: {\n`
     headers.forEach(header => {
       if (header.enabled && header.key) {
-        code += `    '${header.key}': '${header.value}',\n`
+        // 处理环境变量替换
+        const processedKey = processEnvironmentVariables(header.key)
+        const processedValue = processEnvironmentVariables(header.value)
+        code += `    '${processedKey}': '${processedValue}',\n`
       }
     })
-    
+
     // 处理认证
     if (options.value.includeAuth && auth && auth.type !== 'none') {
       if (auth.type === 'bearer' && auth.bearer.token) {
-        code += `    'Authorization': 'Bearer ${auth.bearer.token}',\n`
+        // 处理环境变量替换
+        const processedToken = processEnvironmentVariables(auth.bearer.token)
+        code += `    'Authorization': 'Bearer ${processedToken}',\n`
       }
     }
-    
+
     code += `  },\n`
   }
 
   // 处理请求体
   if (body && ['POST', 'PUT', 'PATCH'].includes(method)) {
     if (body.type === 'raw' && body.raw) {
-      code += `  body: ${JSON.stringify(body.raw)},\n`
+      // 处理环境变量替换
+      const processedBody = processEnvironmentVariables(body.raw)
+      code += `  body: ${JSON.stringify(processedBody)},\n`
     }
   }
 
@@ -261,15 +288,15 @@ const generateJavaScript = () => {
 const generatePython = () => {
   const { method, url, headers, queryParams, body, auth } = props.requestData
   let code = ''
-  
+
   if (options.value.includeComments) {
     code += '# 发送HTTP请求\n'
   }
-  
+
   code += 'import requests\n\n'
 
   // 构建URL
-  let fullUrl = envService.replaceVariables(url)
+  let fullUrl = processEnvironmentVariables(url)
   code += `url = "${fullUrl}"\n`
 
   // 处理查询参数
@@ -277,7 +304,10 @@ const generatePython = () => {
     code += 'params = {\n'
     queryParams.forEach(param => {
       if (param.enabled && param.key) {
-        code += `    "${param.key}": "${param.value}",\n`
+        // 处理环境变量替换
+        const processedKey = processEnvironmentVariables(param.key)
+        const processedValue = processEnvironmentVariables(param.value)
+        code += `    "${processedKey}": "${processedValue}",\n`
       }
     })
     code += '}\n'
@@ -288,15 +318,30 @@ const generatePython = () => {
     code += 'headers = {\n'
     headers.forEach(header => {
       if (header.enabled && header.key) {
-        code += `    "${header.key}": "${header.value}",\n`
+        // 处理环境变量替换
+        const processedKey = processEnvironmentVariables(header.key)
+        const processedValue = processEnvironmentVariables(header.value)
+        code += `    "${processedKey}": "${processedValue}",\n`
       }
     })
+
+    // 处理认证
+    if (options.value.includeAuth && auth && auth.type !== 'none') {
+      if (auth.type === 'bearer' && auth.bearer.token) {
+        // 处理环境变量替换
+        const processedToken = processEnvironmentVariables(auth.bearer.token)
+        code += `    "Authorization": "Bearer ${processedToken}",\n`
+      }
+    }
+
     code += '}\n'
   }
 
   // 处理请求体
   if (body && ['POST', 'PUT', 'PATCH'].includes(method) && body.type === 'raw' && body.raw) {
-    code += `data = ${JSON.stringify(body.raw)}\n`
+    // 处理环境变量替换
+    const processedBody = processEnvironmentVariables(body.raw)
+    code += `data = ${JSON.stringify(processedBody)}\n`
   }
 
   // 构建请求
@@ -316,20 +361,20 @@ const generatePython = () => {
 const generateJava = () => {
   const { method, url } = props.requestData
   let code = ''
-  
+
   if (options.value.includeComments) {
     code += '// 使用OkHttp发送HTTP请求\n'
   }
-  
+
   code += 'import okhttp3.*;\n\n'
   code += 'OkHttpClient client = new OkHttpClient();\n\n'
-  
-  let fullUrl = envService.replaceVariables(url)
+
+  let fullUrl = processEnvironmentVariables(url)
   code += `Request request = new Request.Builder()\n`
   code += `    .url("${fullUrl}")\n`
   code += `    .${method.toLowerCase()}()\n`
   code += `    .build();\n\n`
-  
+
   code += 'try (Response response = client.newCall(request).execute()) {\n'
   code += '    System.out.println(response.body().string());\n'
   code += '}'
@@ -341,19 +386,19 @@ const generateJava = () => {
 const generatePHP = () => {
   const { method, url } = props.requestData
   let code = ''
-  
+
   if (options.value.includeComments) {
     code += '<?php\n// 使用cURL发送HTTP请求\n\n'
   } else {
     code += '<?php\n\n'
   }
-  
-  let fullUrl = envService.replaceVariables(url)
+
+  let fullUrl = processEnvironmentVariables(url)
   code += '$ch = curl_init();\n\n'
   code += `curl_setopt($ch, CURLOPT_URL, "${fullUrl}");\n`
   code += 'curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);\n'
   code += `curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "${method}");\n\n`
-  
+
   code += '$response = curl_exec($ch);\n'
   code += 'curl_close($ch);\n\n'
   code += 'echo $response;'
@@ -365,20 +410,20 @@ const generatePHP = () => {
 const generateGo = () => {
   const { method, url } = props.requestData
   let code = ''
-  
+
   if (options.value.includeComments) {
     code += '// 使用net/http发送HTTP请求\n'
   }
-  
+
   code += 'package main\n\n'
   code += 'import (\n'
   code += '    "fmt"\n'
   code += '    "net/http"\n'
   code += '    "io/ioutil"\n'
   code += ')\n\n'
-  
+
   code += 'func main() {\n'
-  let fullUrl = envService.replaceVariables(url)
+  let fullUrl = processEnvironmentVariables(url)
   code += `    req, _ := http.NewRequest("${method}", "${fullUrl}", nil)\n`
   code += '    client := &http.Client{}\n'
   code += '    resp, err := client.Do(req)\n'

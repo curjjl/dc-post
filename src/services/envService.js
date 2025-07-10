@@ -177,10 +177,10 @@ class EnvService {
   getAllEnvironments() {
     try {
       const stored = localStorage.getItem(this.storageKey)
-      return stored ? JSON.parse(stored) :this.getDefaultVariables()
+      return stored ? JSON.parse(stored) : { default: this.getDefaultVariables()  }
     } catch (error) {
       console.error('获取环境配置失败:', error)
-      return this.getDefaultVariables()
+      return { default: this.getDefaultVariables() }
     }
   }
 
