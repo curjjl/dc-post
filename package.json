@@ -1,0 +1,36 @@
+{
+  "name": "vue-api-tester",
+  "version": "1.0.0",
+  "description": "A Vue 3 based API testing tool similar to Postman",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "serve": "vite preview"
+  },
+  "dependencies": {
+    "@ant-design/icons-vue": "^7.0.0",
+    "ant-design-vue": "^4.0.0",
+    "axios": "^1.6.0",
+    "monaco-editor": "^0.45.0",
+    "vue": "^3.4.0",
+    "vue-router": "^4.2.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.0.0",
+    "vite": "^5.0.0",
+    "vite-plugin-monaco-editor": "^1.1.0"
+  },
+  "keywords": [
+    "vue",
+    "api",
+    "testing",
+    "postman",
+    "rest",
+    "http"
+  ],
+  "author": "",
+  "license": "MIT",
+  "packageManager": "yarn@3.6.2+sha512.2c2f8b9615e6659773f65cdec7cf92ef773a98a99e611579601f61c7a91ec94c89c929aac86f1cee819421a9b0db7acfd53ec3ebb95af44f77f77634b08b9557"
+}
