@@ -5,7 +5,6 @@
       <a-input-search
         v-model:value="searchKeyword"
         placeholder="搜索历史记录..."
-        size="small"
         @search="handleSearch"
       />
     </div>
@@ -16,11 +15,14 @@
         :data-source="filteredHistory"
         size="small"
         :split="false"
+        class="history-list-container"
+        style="width: 100%;"
       >
         <template #renderItem="{ item }">
           <a-list-item 
             class="history-item"
             @click="selectRequest(item)"
+            style="width: 100%;"
           >
             <div class="item-content">
               <div class="item-header">
@@ -173,8 +175,9 @@ const formatTime = (timestamp) => {
 
 // 截断URL显示
 const truncateUrl = (url) => {
-  if (url.length <= 40) return url
-  return url.substring(0, 37) + '...'
+  return url
+  // if (url.length <= 40) return url
+  // return url.substring(0, 37) + '...'
 }
 
 // 加载历史记录
@@ -255,6 +258,7 @@ onMounted(() => {
 
 <style scoped>
 .history-panel {
+  width: 100%;
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -266,6 +270,7 @@ onMounted(() => {
 }
 
 .history-list {
+  width: 100%;
   flex: 1;
   overflow-y: auto;
   padding: 8px 0;
@@ -287,6 +292,7 @@ onMounted(() => {
 }
 
 .item-content {
+  width: 100%;
   flex: 1;
   min-width: 0;
 }
@@ -311,16 +317,14 @@ onMounted(() => {
 }
 
 .item-url {
-  font-size: 12px;
+  width: 100%;
+  font-size: 14px;
   color: #333;
   margin-bottom: 4px;
   font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
 }
 
 .item-status {

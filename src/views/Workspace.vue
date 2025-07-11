@@ -27,19 +27,30 @@
 
     <a-layout>
       <!-- 左侧历史记录面板 -->
-      <a-layout-sider 
-        v-model:collapsed="historyCollapsed" 
-        :width="300" 
+      <a-layout-sider
+        v-model:collapsed="historyCollapsed"
+        :width="historyPanelWidth"
         collapsible
         theme="light"
         class="history-sider"
       >
+        <!-- 拖拽手柄 -->
+        <div
+          v-if="!historyCollapsed"
+          class="resize-handle resize-handle--left"
+          :class="{ 'resizing': isResizingHistory }"
+          @mousedown="startHistoryResize"
+          @touchstart="startHistoryResizeTouch"
+        >
+          <div class="resize-handle-line"></div>
+        </div>
+
         <div class="sider-header">
           <h3 v-if="!historyCollapsed">请求历史</h3>
         </div>
-        <HistoryPanel 
+        <HistoryPanel
           v-if="!historyCollapsed"
-          @select-request="handleSelectRequest" 
+          @select-request="handleSelectRequest"
         />
       </a-layout-sider>
 
@@ -47,7 +58,7 @@
       <a-layout-content class="main-content">
         <div class="content-wrapper">
           <!-- 请求配置区 -->
-          <RequestConfig 
+          <RequestConfig
             ref="requestConfigRef"
             @send-request="handleSendRequest"
           />
@@ -55,18 +66,29 @@
       </a-layout-content>
 
       <!-- 右侧响应展示面板 -->
-      <a-layout-sider 
+      <a-layout-sider
         v-model:collapsed="responseCollapsed"
-        :width="400"
+        :width="responsePanelWidth"
         collapsible
         theme="light"
         class="response-sider"
         :reverseArrow="true"
       >
+        <!-- 拖拽手柄 -->
+        <div
+          v-if="!responseCollapsed"
+          class="resize-handle resize-handle--right"
+          :class="{ 'resizing': isResizingResponse }"
+          @mousedown="startResponseResize"
+          @touchstart="startResponseResizeTouch"
+        >
+          <div class="resize-handle-line"></div>
+        </div>
+
         <div class="sider-header">
           <h3 v-if="!responseCollapsed">响应结果</h3>
         </div>
-        <ResponsePanel 
+        <ResponsePanel
           v-if="!responseCollapsed"
           :response="currentResponse"
           :loading="requestLoading"
@@ -86,7 +108,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { HistoryOutlined, BulbOutlined, SettingOutlined, CodeOutlined } from '@ant-design/icons-vue'
 import RequestConfig from '@/components/RequestConfig.vue'
@@ -127,6 +149,16 @@ const router = useRouter()
 const historyCollapsed = ref(false)
 const responseCollapsed = ref(false)
 
+// 面板宽度状态
+const historyPanelWidth = ref(300)
+const responsePanelWidth = ref(400)
+
+// 拖拽状态
+const isResizingHistory = ref(false)
+const isResizingResponse = ref(false)
+const startX = ref(0)
+const startWidth = ref(0)
+
 // 请求状态
 const requestLoading = ref(false)
 const currentResponse = ref(null)
@@ -144,6 +176,20 @@ const isDarkMode = ref(false)
 const initTheme = () => {
   const savedTheme = localStorage.getItem('theme')
   isDarkMode.value = savedTheme === 'dark'
+}
+
+// 初始化面板宽度
+const initPanelWidths = () => {
+  const savedHistoryWidth = localStorage.getItem('historyPanelWidth')
+  const savedResponseWidth = localStorage.getItem('responsePanelWidth')
+
+  if (savedHistoryWidth) {
+    historyPanelWidth.value = parseInt(savedHistoryWidth, 10)
+  }
+
+  if (savedResponseWidth) {
+    responsePanelWidth.value = parseInt(savedResponseWidth, 10)
+  }
 }
 
 // 是否有有效的请求数据
@@ -263,8 +309,147 @@ const goToHistory = () => {
   router.push(routeObject)
 }
 
+// 节流函数
+const throttle = (func, limit) => {
+  let inThrottle
+  return function(...args) {
+    if (!inThrottle) {
+      func.apply(this, args)
+      inThrottle = true
+      setTimeout(() => inThrottle = false, limit)
+    }
+  }
+}
+
+// 开始拖拽历史面板
+const startHistoryResize = (e) => {
+  e.preventDefault()
+  startResize(e.clientX, 'history')
+}
+
+const startHistoryResizeTouch = (e) => {
+  e.preventDefault()
+  const touch = e.touches[0]
+  startResize(touch.clientX, 'history')
+}
+
+// 开始拖拽响应面板
+const startResponseResize = (e) => {
+  e.preventDefault()
+  startResize(e.clientX, 'response')
+}
+
+const startResponseResizeTouch = (e) => {
+  e.preventDefault()
+  const touch = e.touches[0]
+  startResize(touch.clientX, 'response')
+}
+
+// 开始拖拽
+const startResize = (clientX, type) => {
+  if (type === 'history') {
+    isResizingHistory.value = true
+    startWidth.value = historyPanelWidth.value
+  } else {
+    isResizingResponse.value = true
+    startWidth.value = responsePanelWidth.value
+  }
+
+  startX.value = clientX
+
+  document.addEventListener('mousemove', handleMouseMove, { passive: false })
+  document.addEventListener('mouseup', handleMouseUp, { passive: false })
+  document.addEventListener('touchmove', handleTouchMove, { passive: false })
+  document.addEventListener('touchend', handleTouchEnd, { passive: false })
+
+  document.body.style.userSelect = 'none'
+  document.body.style.cursor = 'col-resize'
+  document.body.classList.add('resizing-panel')
+}
+
+// 鼠标移动处理（节流）
+const handleMouseMove = throttle((e) => {
+  if (!isResizingHistory.value && !isResizingResponse.value) return
+  updateWidth(e.clientX)
+}, 16)
+
+// 触摸移动处理（节流）
+const handleTouchMove = throttle((e) => {
+  if (!isResizingHistory.value && !isResizingResponse.value) return
+  const touch = e.touches[0]
+  updateWidth(touch.clientX)
+}, 16)
+
+// 更新宽度
+const updateWidth = (clientX) => {
+  const deltaX = clientX - startX.value
+  let newWidth
+
+  if (isResizingHistory.value) {
+    newWidth = startWidth.value + deltaX
+    newWidth = Math.max(250, Math.min(500, newWidth))
+    historyPanelWidth.value = newWidth
+    localStorage.setItem('historyPanelWidth', newWidth.toString())
+  } else if (isResizingResponse.value) {
+    newWidth = startWidth.value - deltaX
+    newWidth = Math.max(300, Math.min(800, newWidth))
+    responsePanelWidth.value = newWidth
+    localStorage.setItem('responsePanelWidth', newWidth.toString())
+  }
+}
+
+// 结束拖拽
+const endResize = () => {
+  isResizingHistory.value = false
+  isResizingResponse.value = false
+
+  document.removeEventListener('mousemove', handleMouseMove)
+  document.removeEventListener('mouseup', handleMouseUp)
+  document.removeEventListener('touchmove', handleTouchMove)
+  document.removeEventListener('touchend', handleTouchEnd)
+
+  document.body.style.userSelect = ''
+  document.body.style.cursor = ''
+  document.body.classList.remove('resizing-panel')
+}
+
+const handleMouseUp = endResize
+const handleTouchEnd = endResize
+
+// 键盘支持
+const handleKeyDown = (e) => {
+  if (!isResizingHistory.value && !isResizingResponse.value) return
+
+  if (e.key === 'Escape') {
+    // ESC键取消拖拽，恢复原始宽度
+    if (isResizingHistory.value) {
+      historyPanelWidth.value = startWidth.value
+    } else if (isResizingResponse.value) {
+      responsePanelWidth.value = startWidth.value
+    }
+    endResize()
+  }
+}
+
+// 组件挂载时添加键盘监听
+onMounted(() => {
+  document.addEventListener('keydown', handleKeyDown)
+})
+
+// 组件卸载时清理
+onUnmounted(() => {
+  endResize()
+  document.removeEventListener('keydown', handleKeyDown)
+
+  // 清理可能残留的全局样式
+  document.body.style.userSelect = ''
+  document.body.style.cursor = ''
+  document.body.classList.remove('resizing-panel')
+})
+
 // 初始化
 initTheme()
+initPanelWidths()
 </script>
 
 <style scoped>
@@ -303,6 +488,7 @@ initTheme()
   background: #fff !important;
   border-left: 1px solid #f0f0f0;
   border-right: 1px solid #f0f0f0;
+  position: relative;
 }
 
 .sider-header {
@@ -314,6 +500,58 @@ initTheme()
   margin: 0;
   font-size: 16px;
   font-weight: 500;
+}
+
+/* 拖拽手柄样式 */
+.resize-handle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  cursor: col-resize;
+  background: transparent;
+  z-index: 10;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.resize-handle:hover {
+  background-color: rgba(24, 144, 255, 0.1);
+}
+
+.resize-handle:active,
+.resize-handle.resizing {
+  background-color: rgba(24, 144, 255, 0.2);
+}
+
+.resize-handle:hover .resize-handle-line,
+.resize-handle.resizing .resize-handle-line {
+  opacity: 1;
+  background-color: #1890ff;
+  transform: translate(-50%, -50%) scaleY(1.2);
+}
+
+.resize-handle--left {
+  right: -3px;
+}
+
+.resize-handle--right {
+  left: -3px;
+}
+
+.resize-handle-line {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 2px;
+  height: 60px;
+  background-color: #d9d9d9;
+  opacity: 0;
+  transition: all 0.2s ease;
+  border-radius: 1px;
 }
 
 .main-content {
@@ -337,6 +575,7 @@ initTheme()
   color: #177ddc;
 }
 
+/* 深色主题样式 */
 [data-theme="dark"] .history-sider,
 [data-theme="dark"] .response-sider {
   background: #141414 !important;
@@ -350,6 +589,78 @@ initTheme()
 
 [data-theme="dark"] .sider-header h3 {
   color: #fff;
+}
+
+[data-theme="dark"] .resize-handle:hover {
+  background-color: rgba(23, 125, 220, 0.1);
+}
+
+[data-theme="dark"] .resize-handle:active,
+[data-theme="dark"] .resize-handle.resizing {
+  background-color: rgba(23, 125, 220, 0.2);
+}
+
+[data-theme="dark"] .resize-handle:hover .resize-handle-line,
+[data-theme="dark"] .resize-handle.resizing .resize-handle-line {
+  background-color: #177ddc;
+}
+
+[data-theme="dark"] .resize-handle-line {
+  background-color: #595959;
+}
+
+/* 全局拖拽样式 */
+.resizing-panel {
+  user-select: none !important;
+  cursor: col-resize !important;
+}
+
+.resizing-panel * {
+  pointer-events: none !important;
+}
+
+.resizing-panel .resize-handle {
+  pointer-events: auto !important;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .resize-handle {
+    width: 8px;
+  }
+
+  .resize-handle--left {
+    right: -4px;
+  }
+
+  .resize-handle--right {
+    left: -4px;
+  }
+
+  .resize-handle-line {
+    width: 3px;
+    height: 80px;
+  }
+}
+
+/* 触摸设备优化 */
+@media (pointer: coarse) {
+  .resize-handle {
+    width: 12px;
+  }
+
+  .resize-handle--left {
+    right: -6px;
+  }
+
+  .resize-handle--right {
+    left: -6px;
+  }
+
+  .resize-handle-line {
+    width: 4px;
+    height: 100px;
+  }
 }
 
 [data-theme="dark"] .main-content {
