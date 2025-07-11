@@ -15,10 +15,7 @@
       <!-- 响应状态信息 -->
       <div class="response-status">
         <div class="status-line">
-          <a-tag 
-            :color="getStatusColor(response.status)"
-            class="status-tag"
-          >
+          <a-tag :color="getStatusColor(response.status)" class="status-tag">
             {{ response.status }} {{ response.statusText }}
           </a-tag>
           <span class="duration">{{ response.duration }}ms</span>
@@ -33,29 +30,35 @@
           <div class="response-body">
             <div class="body-actions">
               <a-button-group size="small">
-                <a-button 
+                <a-button
                   :type="bodyViewMode === 'formatted' ? 'primary' : 'default'"
                   @click="bodyViewMode = 'formatted'"
                 >
                   格式化
                 </a-button>
-                <a-button 
+                <a-button
                   :type="bodyViewMode === 'raw' ? 'primary' : 'default'"
                   @click="bodyViewMode = 'raw'"
                 >
                   原始
                 </a-button>
               </a-button-group>
-              
+
               <a-button size="small" @click="copyResponse">
                 <template #icon><CopyOutlined /></template>
                 复制
               </a-button>
             </div>
-            
+
             <div ref="responseBodyContainer" class="response-body-content">
-              <pre v-if="bodyViewMode === 'raw'" class="raw-content">{{ responseBodyText }}</pre>
-              <div v-else ref="bodyEditorContainer" class="body-editor-container"></div>
+              <pre v-if="bodyViewMode === 'raw'" class="raw-content">{{
+                responseBodyText
+              }}</pre>
+              <div
+                v-else
+                ref="bodyEditorContainer"
+                class="body-editor-container"
+              ></div>
             </div>
           </div>
         </a-tab-pane>
@@ -63,8 +66,8 @@
         <!-- 响应头 -->
         <a-tab-pane key="headers" tab="Headers">
           <div class="response-headers">
-            <a-table 
-              :columns="headerColumns" 
+            <a-table
+              :columns="headerColumns"
               :data-source="headerData"
               :pagination="false"
               size="small"
@@ -97,7 +100,9 @@
                         <span>值: {{ item.value }}</span>
                         <span v-if="item.domain">域: {{ item.domain }}</span>
                         <span v-if="item.path">路径: {{ item.path }}</span>
-                        <span v-if="item.expires">过期: {{ item.expires }}</span>
+                        <span v-if="item.expires"
+                          >过期: {{ item.expires }}</span
+                        >
                       </div>
                     </template>
                   </a-list-item-meta>
@@ -121,193 +126,205 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, nextTick, onUnmounted } from 'vue'
-import { LoadingOutlined, CopyOutlined, ApiOutlined } from '@ant-design/icons-vue'
-import { message } from 'ant-design-vue'
-import * as monaco from 'monaco-editor'
+import { ref, computed, watch, nextTick, onUnmounted } from "vue";
+import {
+  LoadingOutlined,
+  CopyOutlined,
+  ApiOutlined,
+} from "@ant-design/icons-vue";
+import { message } from "ant-design-vue";
+import * as monaco from "monaco-editor";
 
 const props = defineProps({
   response: {
     type: Object,
-    default: null
+    default: null,
   },
   loading: {
     type: Boolean,
-    default: false
-  }
-})
+    default: false,
+  },
+});
 
-const activeTab = ref('body')
-const bodyViewMode = ref('formatted')
-const responseBodyContainer = ref(null)
-const bodyEditorContainer = ref(null)
-let bodyEditor = null
+const activeTab = ref("body");
+const bodyViewMode = ref("formatted");
+const responseBodyContainer = ref(null);
+const bodyEditorContainer = ref(null);
+let bodyEditor = null;
 
 // 响应体文本
 const responseBodyText = computed(() => {
-  if (!props.response?.data) return ''
-  
-  if (typeof props.response.data === 'string') {
-    return props.response.data
+  if (!props.response?.data) return "";
+
+  if (typeof props.response.data === "string") {
+    return props.response.data;
   }
-  
-  return JSON.stringify(props.response.data, null, 2)
-})
+
+  return JSON.stringify(props.response.data, null, 2);
+});
 
 // 获取状态码颜色
 const getStatusColor = (status) => {
-  if (status >= 200 && status < 300) return 'success'
-  if (status >= 300 && status < 400) return 'warning'
-  if (status >= 400 && status < 500) return 'error'
-  if (status >= 500) return 'error'
-  return 'default'
-}
+  if (status >= 200 && status < 300) return "success";
+  if (status >= 300 && status < 400) return "warning";
+  if (status >= 400 && status < 500) return "error";
+  if (status >= 500) return "error";
+  return "default";
+};
 
 // Headers表格列配置
 const headerColumns = [
   {
-    title: '名称',
-    key: 'key',
-    width: '30%'
+    title: "名称",
+    key: "key",
+    width: "30%",
   },
   {
-    title: '值',
-    key: 'value',
-    width: '70%'
-  }
-]
+    title: "值",
+    key: "value",
+    width: "70%",
+  },
+];
 
 // Headers数据
 const headerData = computed(() => {
-  if (!props.response?.headers) return []
-  
+  if (!props.response?.headers) return [];
+
   return Object.entries(props.response.headers).map(([key, value]) => ({
     key,
-    value
-  }))
-})
+    value,
+  }));
+});
 
 // Cookie数据
 const cookieData = computed(() => {
   // 这里可以解析Set-Cookie头部信息
-  const setCookieHeader = props.response?.headers?.['set-cookie']
-  if (!setCookieHeader) return []
-  
+  const setCookieHeader = props.response?.headers?.["set-cookie"];
+  if (!setCookieHeader) return [];
+
   // 简单的Cookie解析示例
-  const cookies = Array.isArray(setCookieHeader) ? setCookieHeader : [setCookieHeader]
+  const cookies = Array.isArray(setCookieHeader)
+    ? setCookieHeader
+    : [setCookieHeader];
   return cookies.map((cookie, index) => {
-    const parts = cookie.split(';')
-    const [nameValue] = parts
-    const [name, value] = nameValue.split('=')
-    
+    const parts = cookie.split(";");
+    const [nameValue] = parts;
+    const [name, value] = nameValue.split("=");
+
     return {
       name: name?.trim(),
       value: value?.trim(),
-      domain: extractCookieAttribute(parts, 'Domain'),
-      path: extractCookieAttribute(parts, 'Path'),
-      expires: extractCookieAttribute(parts, 'Expires')
-    }
-  })
-})
+      domain: extractCookieAttribute(parts, "Domain"),
+      path: extractCookieAttribute(parts, "Path"),
+      expires: extractCookieAttribute(parts, "Expires"),
+    };
+  });
+});
 
 // 提取Cookie属性
 const extractCookieAttribute = (parts, attribute) => {
-  const part = parts.find(p => p.trim().toLowerCase().startsWith(attribute.toLowerCase()))
-  return part ? part.split('=')[1]?.trim() : null
-}
+  const part = parts.find((p) =>
+    p.trim().toLowerCase().startsWith(attribute.toLowerCase())
+  );
+  return part ? part.split("=")[1]?.trim() : null;
+};
 
 // 初始化响应体编辑器
 const initBodyEditor = () => {
-  if (!bodyEditorContainer.value || bodyEditor) return
+  if (!bodyEditorContainer.value || bodyEditor) return;
 
   try {
-    const language = detectLanguage(responseBodyText.value)
+    const language = detectLanguage(responseBodyText.value);
 
     bodyEditor = monaco.editor.create(bodyEditorContainer.value, {
       value: responseBodyText.value,
       language,
-      theme: 'vs',
+      theme: "vs",
       readOnly: true,
       automaticLayout: true,
       minimap: { enabled: false },
       scrollBeyondLastLine: false,
       fontSize: 12,
-      lineNumbers: 'on',
-      wordWrap: 'on',
+      lineNumbers: "on",
+      wordWrap: "on",
       // 禁用一些可能导致Worker问题的功能
       quickSuggestions: false,
       parameterHints: { enabled: false },
       suggestOnTriggerCharacters: false,
-      acceptSuggestionOnEnter: 'off',
-      tabCompletion: 'off',
+      acceptSuggestionOnEnter: "off",
+      tabCompletion: "off",
       wordBasedSuggestions: false,
       // 禁用语法检查相关功能
       validate: false,
       lint: {
-        enable: false
-      }
-    })
+        enable: false,
+      },
+    });
   } catch (error) {
-    console.error('Failed to create Monaco editor:', error)
+    console.error("Failed to create Monaco editor:", error);
     // 如果Monaco编辑器创建失败，回退到原始文本显示
-    bodyViewMode.value = 'raw'
+    bodyViewMode.value = "raw";
   }
-}
+};
 
 // 检测语言类型
 const detectLanguage = (content) => {
   try {
-    JSON.parse(content)
-    return 'json'
+    JSON.parse(content);
+    return "json";
   } catch {
-    if (content.includes('<?xml')) return 'xml'
-    if (content.includes('<html')) return 'html'
-    return 'text'
+    if (content.includes("<?xml")) return "xml";
+    if (content.includes("<html")) return "html";
+    return "text";
   }
-}
+};
 
 // 销毁编辑器
 const destroyBodyEditor = () => {
   if (bodyEditor) {
-    bodyEditor.dispose()
-    bodyEditor = null
+    bodyEditor.dispose();
+    bodyEditor = null;
   }
-}
+};
 
 // 复制响应内容
 const copyResponse = async () => {
   try {
-    await navigator.clipboard.writeText(responseBodyText.value)
-    message.success('响应内容已复制到剪贴板')
+    await navigator.clipboard.writeText(responseBodyText.value);
+    message.success("响应内容已复制到剪贴板");
   } catch (error) {
-    message.error('复制失败')
+    message.error("复制失败");
   }
-}
+};
 
 // 监听视图模式变化
 watch(bodyViewMode, (newMode) => {
-  if (newMode === 'formatted') {
+  if (newMode === "formatted") {
     nextTick(() => {
-      initBodyEditor()
-    })
+      initBodyEditor();
+    });
   } else {
-    destroyBodyEditor()
+    destroyBodyEditor();
   }
-})
+});
 
 // 监听响应变化
-watch(() => props.response, (newResponse) => {
-  if (newResponse && bodyViewMode.value === 'formatted') {
-    destroyBodyEditor()
-    nextTick(() => {
-      initBodyEditor()
-    })
-  }
-}, { deep: true })
+watch(
+  () => props.response,
+  (newResponse) => {
+    if (newResponse && bodyViewMode.value === "formatted") {
+      destroyBodyEditor();
+      nextTick(() => {
+        initBodyEditor();
+      });
+    }
+  },
+  { deep: true }
+);
 
 onUnmounted(() => {
-  destroyBodyEditor()
-})
+  destroyBodyEditor();
+});
 </script>
 
 <style scoped>
@@ -350,7 +367,8 @@ onUnmounted(() => {
   font-weight: 500;
 }
 
-.duration, .size {
+.duration,
+.size {
   font-size: 12px;
   color: #666;
 }
@@ -364,6 +382,10 @@ onUnmounted(() => {
 }
 
 .response-tabs :deep(.ant-tabs-tabpane) {
+  height: 100%;
+}
+
+.response-tabs :deep(.ant-tabs-content) {
   height: 100%;
 }
 
@@ -392,26 +414,26 @@ onUnmounted(() => {
 .raw-content {
   margin: 0;
   padding: 12px;
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
   font-size: 12px;
   line-height: 1.5;
   white-space: pre-wrap;
   word-break: break-all;
-  max-height: 400px;
+  height: 100%;
   overflow: auto;
 }
 
 .body-editor-container {
-  height: 400px;
+  height: 100%;
 }
 
 .response-headers {
-  max-height: 400px;
+  height: 100%;
   overflow: auto;
 }
 
 .header-value {
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
   font-size: 12px;
   background: #f5f5f5;
   padding: 2px 4px;
@@ -419,7 +441,7 @@ onUnmounted(() => {
 }
 
 .response-cookies {
-  max-height: 400px;
+  height: 100%;
   overflow: auto;
 }
 
