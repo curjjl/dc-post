@@ -1,7 +1,7 @@
 <template>
   <div class="request-config">
     <!-- 请求基本配置 -->
-    <a-card title="请求配置" class="config-card">
+    <a-card :title="route.query.name || '请求配置'" class="config-card">
       <a-form :model="requestForm" layout="vertical">
         <!-- 请求方法和URL -->
         <a-row :gutter="16">
@@ -88,6 +88,9 @@ import ParamsTable from './ParamsTable.vue'
 import AuthConfig from './AuthConfig.vue'
 import BodyEditor from './BodyEditor.vue'
 import { processEnvironmentVariables } from '@/utils/envUtils.js'
+import { useRoute } from 'vue-router'
+
+const route = useRoute()
 
 const emit = defineEmits(['send-request'])
 

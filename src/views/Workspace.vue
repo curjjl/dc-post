@@ -13,7 +13,7 @@
             <template #icon><CodeOutlined /></template>
             生成代码
           </a-button>
-          <a-button type="text" @click="$router.push('/history')">
+          <a-button type="text" @click="goToHistory">
             <template #icon><HistoryOutlined /></template>
             历史记录
           </a-button>
@@ -86,7 +86,8 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { HistoryOutlined, BulbOutlined, SettingOutlined, CodeOutlined } from '@ant-design/icons-vue'
 import RequestConfig from '@/components/RequestConfig.vue'
 import ResponsePanel from '@/components/ResponsePanel.vue'
@@ -94,6 +95,33 @@ import HistoryPanel from '@/components/HistoryPanel.vue'
 import EnvManager from '@/components/EnvManager.vue'
 import CodeGenerator from '@/components/CodeGenerator.vue'
 import httpService from '@/services/httpService.js'
+import { buildRouteObject, buildApiQueryParams, hasValidQueryParams } from '@/utils/routeParamsHelper.js'
+
+// 定义查询参数 props
+const props = defineProps({
+  id: {
+    type: String,
+    default: null
+  },
+  name: {
+    type: String,
+    default: null
+  },
+  code: {
+    type: String,
+    default: null
+  },
+  pid: {
+    type: String,
+    default: null
+  },
+  dir: {
+    type: String,
+    default: null
+  }
+})
+
+const router = useRouter()
 
 // 面板折叠状态
 const historyCollapsed = ref(false)
@@ -184,6 +212,55 @@ const handleSelectRequest = (requestData) => {
   if (requestConfigRef.value) {
     requestConfigRef.value.loadRequest(requestData)
   }
+}
+
+// 监听查询参数变化
+watch(() => [props.id, props.name, props.code, props.pid, props.dir], (newParams) => {
+  console.log('查询参数变化:', {
+    id: newParams[0],
+    name: newParams[1],
+    code: newParams[2],
+    pid: newParams[3],
+    dir: newParams[4]
+  })
+  // 这里可以根据参数变化执行相应的逻辑
+  handleQueryParamsChange()
+}, { immediate: true })
+
+// 处理查询参数变化
+function handleQueryParamsChange() {
+  // 可以在这里根据查询参数执行查询后台服务等操作
+  const queryParams = {
+    id: props.id,
+    name: props.name,
+    code: props.code,
+    pid: props.pid,
+    dir: props.dir
+  }
+
+  if (hasValidQueryParams(queryParams)) {
+    console.log('当前查询参数:', queryParams)
+
+    // 构建API查询参数
+    const apiParams = buildApiQueryParams(queryParams)
+    console.log('API查询参数:', apiParams)
+
+    // TODO: 根据参数查询后台服务
+    // 例如：await fetchDataFromBackend(apiParams)
+  }
+}
+
+// 跳转到历史记录页面（保持查询参数）
+const goToHistory = () => {
+  const queryParams = {
+    id: props.id,
+    name: props.name,
+    code: props.code,
+    pid: props.pid,
+    dir: props.dir
+  }
+  const routeObject = buildRouteObject('History', queryParams)
+  router.push(routeObject)
 }
 
 // 初始化

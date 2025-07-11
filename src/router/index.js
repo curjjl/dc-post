@@ -10,12 +10,26 @@ const routes = [
   {
     path: '/workspace',
     name: 'Workspace',
-    component: Workspace
+    component: Workspace,
+    props: route => ({
+      id: route.query.id,
+      name: route.query.name,
+      code: route.query.code,
+      pid: route.query.pid,
+      dir: route.query.dir
+    })
   },
   {
     path: '/history',
     name: 'History',
-    component: History
+    component: History,
+    props: route => ({
+      id: route.query.id,
+      name: route.query.name,
+      code: route.query.code,
+      pid: route.query.pid,
+      dir: route.query.dir
+    })
   }
 ]
 

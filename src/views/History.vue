@@ -3,7 +3,7 @@
     <!-- 固定头部 -->
     <div class="header">
       <div class="header-content">
-        <a-button type="text" @click="$router.push('/workspace')" class="back-btn">
+        <a-button type="text" @click="goBackToWorkspace" class="back-btn">
           <template #icon><ArrowLeftOutlined /></template>
           返回工作台
         </a-button>
@@ -43,7 +43,7 @@
             <template #image>
               <HistoryOutlined style="font-size: 48px; color: #d9d9d9" />
             </template>
-            <a-button type="primary" @click="$router.push('/workspace')">
+            <a-button type="primary" @click="goBackToWorkspace">
               开始发送请求
             </a-button>
           </a-empty>
@@ -135,7 +135,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   ArrowLeftOutlined,
@@ -145,6 +145,31 @@ import {
   LoadingOutlined
 } from '@ant-design/icons-vue'
 import { message, Modal } from 'ant-design-vue'
+import { buildRouteObject, buildApiQueryParams, hasValidQueryParams } from '@/utils/routeParamsHelper.js'
+
+// 定义查询参数 props
+const props = defineProps({
+  id: {
+    type: String,
+    default: null
+  },
+  name: {
+    type: String,
+    default: null
+  },
+  code: {
+    type: String,
+    default: null
+  },
+  pid: {
+    type: String,
+    default: null
+  },
+  dir: {
+    type: String,
+    default: null
+  }
+})
 
 const router = useRouter()
 
@@ -307,12 +332,70 @@ const handleSearchInput = () => {
   }, 300)
 }
 
+// 监听查询参数变化
+watch(() => [props.id, props.name, props.code, props.pid, props.dir], (newParams) => {
+  console.log('History页面查询参数变化:', {
+    id: newParams[0],
+    name: newParams[1],
+    code: newParams[2],
+    pid: newParams[3],
+    dir: newParams[4]
+  })
+  // 这里可以根据参数变化执行相应的逻辑
+  handleQueryParamsChange()
+}, { immediate: true })
+
+// 处理查询参数变化
+function handleQueryParamsChange () {
+  // 可以在这里根据查询参数执行查询后台服务等操作
+  const queryParams = {
+    id: props.id,
+    name: props.name,
+    code: props.code,
+    pid: props.pid,
+    dir: props.dir
+  }
+
+  if (hasValidQueryParams(queryParams)) {
+    console.log('History页面当前查询参数:', queryParams)
+
+    // 构建API查询参数
+    const apiParams = buildApiQueryParams(queryParams)
+    console.log('History页面API查询参数:', apiParams)
+
+    // TODO: 根据参数查询后台服务或过滤历史记录
+    // 例如：await fetchHistoryFromBackend(apiParams)
+  }
+}
+
 // 使用请求
 const useRequest = (item) => {
   // 将请求数据存储到临时存储中，供工作台使用
   sessionStorage.setItem('selected_request', JSON.stringify(item))
-  router.push('/workspace')
+  // 保持当前查询参数，跳转到工作台
+  const queryParams = {
+    id: props.id,
+    name: props.name,
+    code: props.code,
+    pid: props.pid,
+    dir: props.dir
+  }
+  const routeObject = buildRouteObject('Workspace', queryParams)
+  router.push(routeObject)
   message.success('已加载到工作台')
+}
+
+// 返回工作台（保持查询参数）
+const goBackToWorkspace = () => {
+  const queryParams = {
+    id: props.id,
+    name: props.name,
+    code: props.code,
+    pid: props.pid,
+    dir: props.dir
+  }
+  const routeObject = buildRouteObject('Workspace', queryParams)
+  router.push(routeObject)
 }
 
 // 删除单个历史记录

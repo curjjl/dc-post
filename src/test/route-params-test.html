@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>路由参数测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .test-link {
+            display: inline-block;
+            margin: 5px;
+            padding: 8px 15px;
+            background: #1890ff;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+        }
+        .test-link:hover {
+            background: #40a9ff;
+        }
+        .current-params {
+            background: #f6f6f6;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>路由参数测试页面</h1>
+    
+    <div class="current-params">
+        <h3>当前URL参数：</h3>
+        <div id="current-params"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>工作台页面测试链接</h3>
+        <a href="/workspace" class="test-link">基础工作台</a>
+        <a href="/workspace?id=198732297964114492" class="test-link">带 id</a>
+        <a href="/workspace?id=198732297964114492&name=主页" class="test-link">带 id + name</a>
+        <a href="/workspace?id=198732297964114492&name=主页&code=-ALGYLwX2tyuRfZu9xu-K" class="test-link">带 id + name + code</a>
+        <a href="/workspace?id=198732297964114492&name=主页&code=-ALGYLwX2tyuRfZu9xu-K&pid=tzascvXx59JIZFj&dir=236010473579141113" class="test-link">完整参数</a>
+    </div>
+
+    <div class="test-section">
+        <h3>历史记录页面测试链接</h3>
+        <a href="/history" class="test-link">基础历史</a>
+        <a href="/history?id=198732297964114492" class="test-link">带 id</a>
+        <a href="/history?id=198732297964114492&name=主页" class="test-link">带 id + name</a>
+        <a href="/history?id=198732297964114492&name=主页&code=-ALGYLwX2tyuRfZu9xu-K" class="test-link">带 id + name + code</a>
+        <a href="/history?id=198732297964114492&name=主页&code=-ALGYLwX2tyuRfZu9xu-K&pid=tzascvXx59JIZFj&dir=236010473579141113" class="test-link">完整参数</a>
+    </div>
+
+    <div class="test-section">
+        <h3>特殊测试用例</h3>
+        <a href="/workspace?pid=project1&dir=folder2&id=item3&code=version4" class="test-link">字符串参数</a>
+        <a href="/workspace?id=999&name=测试页面&code=xyz&pid=888&dir=777" class="test-link">混合参数</a>
+        <a href="/history?name=文档&code=latest&pid=test&dir=folder" class="test-link">文本参数</a>
+    </div>
+
+    <div class="test-section">
+        <h3>使用说明</h3>
+        <p>1. 点击上面的链接测试不同的路由参数组合</p>
+        <p>2. 打开浏览器开发者工具查看控制台输出</p>
+        <p>3. 观察组件中的路由参数变化日志</p>
+        <p>4. 测试页面间导航是否保持参数</p>
+    </div>
+
+    <script>
+        // 显示当前URL参数
+        function updateCurrentParams() {
+            const path = window.location.pathname;
+            const search = window.location.search;
+            const urlParams = new URLSearchParams(search);
+
+            let paramsHtml = `<strong>路径:</strong> ${path}<br>`;
+
+            if (search) {
+                paramsHtml += `<strong>查询字符串:</strong> ${search}<br><br>`;
+                paramsHtml += `<strong>解析后的参数:</strong><br>`;
+
+                const id = urlParams.get('id');
+                const name = urlParams.get('name');
+                const code = urlParams.get('code');
+                const pid = urlParams.get('pid');
+                const dir = urlParams.get('dir');
+
+                if (id) paramsHtml += `<strong>id:</strong> ${id}<br>`;
+                if (name) paramsHtml += `<strong>name:</strong> ${decodeURIComponent(name)}<br>`;
+                if (code) paramsHtml += `<strong>code:</strong> ${code}<br>`;
+                if (pid) paramsHtml += `<strong>pid:</strong> ${pid}<br>`;
+                if (dir) paramsHtml += `<strong>dir:</strong> ${dir}<br>`;
+            } else {
+                paramsHtml += '<em>无查询参数</em>';
+            }
+
+            document.getElementById('current-params').innerHTML = paramsHtml;
+        }
+
+        // 页面加载时更新参数显示
+        updateCurrentParams();
+
+        // 监听URL变化（如果使用了前端路由）
+        window.addEventListener('popstate', updateCurrentParams);
+    </script>
+</body>
+</html>
