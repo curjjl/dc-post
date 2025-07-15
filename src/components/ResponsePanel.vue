@@ -77,7 +77,7 @@
                   <strong>{{ record.key }}</strong>
                 </template>
                 <template v-else-if="column.key === 'value'">
-                  <code class="header-value">{{ record.value }}</code>
+                  <code class="header-value" :title="record.value">{{ record.value }}</code>
                 </template>
               </template>
             </a-table>
@@ -178,11 +178,13 @@ const headerColumns = [
     title: "名称",
     key: "key",
     width: "30%",
+    ellipsis: true,
   },
   {
     title: "值",
     key: "value",
     width: "70%",
+    ellipsis: true,
   },
 ];
 

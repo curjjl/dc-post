@@ -9,7 +9,11 @@
             <template #icon><SettingOutlined /></template>
             环境变量
           </a-button>
-          <a-button type="text" @click="showCodeGenerator = true" :disabled="!hasValidRequest">
+          <a-button
+            type="text"
+            @click="showCodeGenerator = true"
+            :disabled="!hasValidRequest"
+          >
             <template #icon><CodeOutlined /></template>
             生成代码
           </a-button>
@@ -19,7 +23,7 @@
           </a-button>
           <a-button type="text" @click="toggleTheme">
             <template #icon><BulbOutlined /></template>
-            {{ isDarkMode ? '浅色主题' : '深色主题' }}
+            {{ isDarkMode ? "浅色主题" : "深色主题" }}
           </a-button>
         </div>
       </div>
@@ -38,7 +42,7 @@
         <div
           v-if="!historyCollapsed"
           class="resize-handle resize-handle--left"
-          :class="{ 'resizing': isResizingHistory }"
+          :class="{ resizing: isResizingHistory }"
           @mousedown="startHistoryResize"
           @touchstart="startHistoryResizeTouch"
         >
@@ -78,7 +82,7 @@
         <div
           v-if="!responseCollapsed"
           class="resize-handle resize-handle--right"
-          :class="{ 'resizing': isResizingResponse }"
+          :class="{ resizing: isResizingResponse }"
           @mousedown="startResponseResize"
           @touchstart="startResponseResizeTouch"
         >
@@ -108,138 +112,148 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { HistoryOutlined, BulbOutlined, SettingOutlined, CodeOutlined } from '@ant-design/icons-vue'
-import RequestConfig from '@/components/RequestConfig.vue'
-import ResponsePanel from '@/components/ResponsePanel.vue'
-import HistoryPanel from '@/components/HistoryPanel.vue'
-import EnvManager from '@/components/EnvManager.vue'
-import CodeGenerator from '@/components/CodeGenerator.vue'
-import httpService from '@/services/httpService.js'
-import { buildRouteObject, buildApiQueryParams, hasValidQueryParams } from '@/utils/routeParamsHelper.js'
+import { ref, computed, watch, onMounted, onUnmounted } from "vue";
+import { useRouter } from "vue-router";
+import {
+  HistoryOutlined,
+  BulbOutlined,
+  SettingOutlined,
+  CodeOutlined,
+} from "@ant-design/icons-vue";
+import RequestConfig from "@/components/RequestConfig.vue";
+import ResponsePanel from "@/components/ResponsePanel.vue";
+import HistoryPanel from "@/components/HistoryPanel.vue";
+import EnvManager from "@/components/EnvManager.vue";
+import CodeGenerator from "@/components/CodeGenerator.vue";
+import httpService from "@/services/httpService.js";
+import {
+  buildRouteObject,
+  buildApiQueryParams,
+  hasValidQueryParams,
+} from "@/utils/routeParamsHelper.js";
 
 // 定义查询参数 props
 const props = defineProps({
   id: {
     type: String,
-    default: null
+    default: null,
   },
   name: {
     type: String,
-    default: null
+    default: null,
   },
   code: {
     type: String,
-    default: null
+    default: null,
   },
   pid: {
     type: String,
-    default: null
+    default: null,
   },
   dir: {
     type: String,
-    default: null
-  }
-})
+    default: null,
+  },
+});
 
-const router = useRouter()
+const router = useRouter();
 
 // 面板折叠状态
-const historyCollapsed = ref(false)
-const responseCollapsed = ref(false)
+const historyCollapsed = ref(false);
+const responseCollapsed = ref(false);
 
 // 面板宽度状态
-const historyPanelWidth = ref(300)
-const responsePanelWidth = ref(400)
+const historyPanelWidth = ref(300);
+const responsePanelWidth = ref(400);
 
 // 拖拽状态
-const isResizingHistory = ref(false)
-const isResizingResponse = ref(false)
-const startX = ref(0)
-const startWidth = ref(0)
+const isResizingHistory = ref(false);
+const isResizingResponse = ref(false);
+const startX = ref(0);
+const startWidth = ref(0);
 
 // 请求状态
-const requestLoading = ref(false)
-const currentResponse = ref(null)
-const requestConfigRef = ref(null)
-const currentRequestData = ref({})
+const requestLoading = ref(false);
+const currentResponse = ref(null);
+const requestConfigRef = ref(null);
+const currentRequestData = ref({});
 
 // 对话框状态
-const showEnvManager = ref(false)
-const showCodeGenerator = ref(false)
+const showEnvManager = ref(false);
+const showCodeGenerator = ref(false);
 
 // 主题状态
-const isDarkMode = ref(false)
+const isDarkMode = ref(false);
 
 // 初始化主题状态
 const initTheme = () => {
-  const savedTheme = localStorage.getItem('theme')
-  isDarkMode.value = savedTheme === 'dark'
-}
+  const savedTheme = localStorage.getItem("theme");
+  isDarkMode.value = savedTheme === "dark";
+};
 
 // 初始化面板宽度
 const initPanelWidths = () => {
-  const savedHistoryWidth = localStorage.getItem('historyPanelWidth')
-  const savedResponseWidth = localStorage.getItem('responsePanelWidth')
+  const savedHistoryWidth = localStorage.getItem("historyPanelWidth");
+  const savedResponseWidth = localStorage.getItem("responsePanelWidth");
 
   if (savedHistoryWidth) {
-    historyPanelWidth.value = parseInt(savedHistoryWidth, 10)
+    historyPanelWidth.value = parseInt(savedHistoryWidth, 10);
   }
 
   if (savedResponseWidth) {
-    responsePanelWidth.value = parseInt(savedResponseWidth, 10)
+    responsePanelWidth.value = parseInt(savedResponseWidth, 10);
   }
-}
+};
 
 // 是否有有效的请求数据
 const hasValidRequest = computed(() => {
-  return currentRequestData.value.url && currentRequestData.value.method
-})
+  return currentRequestData.value.url && currentRequestData.value.method;
+});
 
 // 主题切换
 const toggleTheme = () => {
   if (window.toggleTheme) {
-    window.toggleTheme()
+    window.toggleTheme();
     // 更新本地状态
-    isDarkMode.value = !isDarkMode.value
+    isDarkMode.value = !isDarkMode.value;
   }
-}
+};
 
 // 处理发送请求
 const handleSendRequest = async (requestData) => {
-  requestLoading.value = true
-  currentRequestData.value = requestData // 保存当前请求数据
+  requestLoading.value = true;
+  currentRequestData.value = requestData; // 保存当前请求数据
 
   try {
-    console.log('发送请求:', requestData)
+    console.log("发送请求:", requestData);
 
     // 使用HTTP服务发送请求
-    const response = await httpService.sendRequest(requestData)
-    currentResponse.value = response
+    const response = await httpService.sendRequest(requestData);
+    currentResponse.value = response;
 
     // 更新历史记录中的响应信息
-    updateHistoryWithResponse(requestData.id, response)
-
+    updateHistoryWithResponse(requestData.id, response);
   } catch (error) {
-    console.error('请求失败:', error)
+    console.error("请求失败:", error);
     currentResponse.value = {
       status: 0,
-      statusText: 'Error',
+      statusText: "Error",
       headers: {},
       data: { error: error.message },
       duration: 0,
-      size: '0 B'
-    }
+      size: "0 B",
+    };
   } finally {
-    requestLoading.value = false
+    requestLoading.value = false;
   }
-}
+};
 
 // 更新历史记录中的响应信息
 const updateHistoryWithResponse = (requestId, response) => {
-  const history = JSON.parse(localStorage.getItem('api_request_history') || '[]')
-  const index = history.findIndex(item => item.id === requestId)
+  const history = JSON.parse(
+    localStorage.getItem("api_request_history") || "[]"
+  );
+  const index = history.findIndex((item) => item.id === requestId);
 
   if (index !== -1) {
     history[index] = {
@@ -247,31 +261,35 @@ const updateHistoryWithResponse = (requestId, response) => {
       status: response.status,
       statusText: response.statusText,
       duration: response.duration,
-      responseSize: response.size
-    }
-    localStorage.setItem('api_request_history', JSON.stringify(history))
+      responseSize: response.size,
+    };
+    localStorage.setItem("api_request_history", JSON.stringify(history));
   }
-}
+};
 
 // 处理选择历史请求
 const handleSelectRequest = (requestData) => {
   if (requestConfigRef.value) {
-    requestConfigRef.value.loadRequest(requestData)
+    requestConfigRef.value.loadRequest(requestData);
   }
-}
+};
 
 // 监听查询参数变化
-watch(() => [props.id, props.name, props.code, props.pid, props.dir], (newParams) => {
-  console.log('查询参数变化:', {
-    id: newParams[0],
-    name: newParams[1],
-    code: newParams[2],
-    pid: newParams[3],
-    dir: newParams[4]
-  })
-  // 这里可以根据参数变化执行相应的逻辑
-  handleQueryParamsChange()
-}, { immediate: true })
+watch(
+  () => [props.id, props.name, props.code, props.pid, props.dir],
+  (newParams) => {
+    console.log("查询参数变化:", {
+      id: newParams[0],
+      name: newParams[1],
+      code: newParams[2],
+      pid: newParams[3],
+      dir: newParams[4],
+    });
+    // 这里可以根据参数变化执行相应的逻辑
+    handleQueryParamsChange();
+  },
+  { immediate: true }
+);
 
 // 处理查询参数变化
 function handleQueryParamsChange() {
@@ -281,15 +299,15 @@ function handleQueryParamsChange() {
     name: props.name,
     code: props.code,
     pid: props.pid,
-    dir: props.dir
-  }
+    dir: props.dir,
+  };
 
   if (hasValidQueryParams(queryParams)) {
-    console.log('当前查询参数:', queryParams)
+    console.log("当前查询参数:", queryParams);
 
     // 构建API查询参数
-    const apiParams = buildApiQueryParams(queryParams)
-    console.log('API查询参数:', apiParams)
+    const apiParams = buildApiQueryParams(queryParams);
+    console.log("API查询参数:", apiParams);
 
     // TODO: 根据参数查询后台服务
     // 例如：await fetchDataFromBackend(apiParams)
@@ -303,153 +321,153 @@ const goToHistory = () => {
     name: props.name,
     code: props.code,
     pid: props.pid,
-    dir: props.dir
-  }
-  const routeObject = buildRouteObject('History', queryParams)
-  router.push(routeObject)
-}
+    dir: props.dir,
+  };
+  const routeObject = buildRouteObject("History", queryParams);
+  router.push(routeObject);
+};
 
 // 节流函数
 const throttle = (func, limit) => {
-  let inThrottle
-  return function(...args) {
+  let inThrottle;
+  return function (...args) {
     if (!inThrottle) {
-      func.apply(this, args)
-      inThrottle = true
-      setTimeout(() => inThrottle = false, limit)
+      func.apply(this, args);
+      inThrottle = true;
+      setTimeout(() => (inThrottle = false), limit);
     }
-  }
-}
+  };
+};
 
 // 开始拖拽历史面板
 const startHistoryResize = (e) => {
-  e.preventDefault()
-  startResize(e.clientX, 'history')
-}
+  e.preventDefault();
+  startResize(e.clientX, "history");
+};
 
 const startHistoryResizeTouch = (e) => {
-  e.preventDefault()
-  const touch = e.touches[0]
-  startResize(touch.clientX, 'history')
-}
+  e.preventDefault();
+  const touch = e.touches[0];
+  startResize(touch.clientX, "history");
+};
 
 // 开始拖拽响应面板
 const startResponseResize = (e) => {
-  e.preventDefault()
-  startResize(e.clientX, 'response')
-}
+  e.preventDefault();
+  startResize(e.clientX, "response");
+};
 
 const startResponseResizeTouch = (e) => {
-  e.preventDefault()
-  const touch = e.touches[0]
-  startResize(touch.clientX, 'response')
-}
+  e.preventDefault();
+  const touch = e.touches[0];
+  startResize(touch.clientX, "response");
+};
 
 // 开始拖拽
 const startResize = (clientX, type) => {
-  if (type === 'history') {
-    isResizingHistory.value = true
-    startWidth.value = historyPanelWidth.value
+  if (type === "history") {
+    isResizingHistory.value = true;
+    startWidth.value = historyPanelWidth.value;
   } else {
-    isResizingResponse.value = true
-    startWidth.value = responsePanelWidth.value
+    isResizingResponse.value = true;
+    startWidth.value = responsePanelWidth.value;
   }
 
-  startX.value = clientX
+  startX.value = clientX;
 
-  document.addEventListener('mousemove', handleMouseMove, { passive: false })
-  document.addEventListener('mouseup', handleMouseUp, { passive: false })
-  document.addEventListener('touchmove', handleTouchMove, { passive: false })
-  document.addEventListener('touchend', handleTouchEnd, { passive: false })
+  document.addEventListener("mousemove", handleMouseMove, { passive: false });
+  document.addEventListener("mouseup", handleMouseUp, { passive: false });
+  document.addEventListener("touchmove", handleTouchMove, { passive: false });
+  document.addEventListener("touchend", handleTouchEnd, { passive: false });
 
-  document.body.style.userSelect = 'none'
-  document.body.style.cursor = 'col-resize'
-  document.body.classList.add('resizing-panel')
-}
+  document.body.style.userSelect = "none";
+  document.body.style.cursor = "col-resize";
+  document.body.classList.add("resizing-panel");
+};
 
 // 鼠标移动处理（节流）
 const handleMouseMove = throttle((e) => {
-  if (!isResizingHistory.value && !isResizingResponse.value) return
-  updateWidth(e.clientX)
-}, 16)
+  if (!isResizingHistory.value && !isResizingResponse.value) return;
+  updateWidth(e.clientX);
+}, 16);
 
 // 触摸移动处理（节流）
 const handleTouchMove = throttle((e) => {
-  if (!isResizingHistory.value && !isResizingResponse.value) return
-  const touch = e.touches[0]
-  updateWidth(touch.clientX)
-}, 16)
+  if (!isResizingHistory.value && !isResizingResponse.value) return;
+  const touch = e.touches[0];
+  updateWidth(touch.clientX);
+}, 16);
 
 // 更新宽度
 const updateWidth = (clientX) => {
-  const deltaX = clientX - startX.value
-  let newWidth
+  const deltaX = clientX - startX.value;
+  let newWidth;
 
   if (isResizingHistory.value) {
-    newWidth = startWidth.value + deltaX
-    newWidth = Math.max(250, Math.min(500, newWidth))
-    historyPanelWidth.value = newWidth
-    localStorage.setItem('historyPanelWidth', newWidth.toString())
+    newWidth = startWidth.value + deltaX;
+    newWidth = Math.max(250, Math.min(500, newWidth));
+    historyPanelWidth.value = newWidth;
+    localStorage.setItem("historyPanelWidth", newWidth.toString());
   } else if (isResizingResponse.value) {
-    newWidth = startWidth.value - deltaX
-    newWidth = Math.max(300, Math.min(800, newWidth))
-    responsePanelWidth.value = newWidth
-    localStorage.setItem('responsePanelWidth', newWidth.toString())
+    newWidth = startWidth.value - deltaX;
+    newWidth = Math.max(300, Math.min(800, newWidth));
+    responsePanelWidth.value = newWidth;
+    localStorage.setItem("responsePanelWidth", newWidth.toString());
   }
-}
+};
 
 // 结束拖拽
 const endResize = () => {
-  isResizingHistory.value = false
-  isResizingResponse.value = false
+  isResizingHistory.value = false;
+  isResizingResponse.value = false;
 
-  document.removeEventListener('mousemove', handleMouseMove)
-  document.removeEventListener('mouseup', handleMouseUp)
-  document.removeEventListener('touchmove', handleTouchMove)
-  document.removeEventListener('touchend', handleTouchEnd)
+  document.removeEventListener("mousemove", handleMouseMove);
+  document.removeEventListener("mouseup", handleMouseUp);
+  document.removeEventListener("touchmove", handleTouchMove);
+  document.removeEventListener("touchend", handleTouchEnd);
 
-  document.body.style.userSelect = ''
-  document.body.style.cursor = ''
-  document.body.classList.remove('resizing-panel')
-}
+  document.body.style.userSelect = "";
+  document.body.style.cursor = "";
+  document.body.classList.remove("resizing-panel");
+};
 
-const handleMouseUp = endResize
-const handleTouchEnd = endResize
+const handleMouseUp = endResize;
+const handleTouchEnd = endResize;
 
 // 键盘支持
 const handleKeyDown = (e) => {
-  if (!isResizingHistory.value && !isResizingResponse.value) return
+  if (!isResizingHistory.value && !isResizingResponse.value) return;
 
-  if (e.key === 'Escape') {
+  if (e.key === "Escape") {
     // ESC键取消拖拽，恢复原始宽度
     if (isResizingHistory.value) {
-      historyPanelWidth.value = startWidth.value
+      historyPanelWidth.value = startWidth.value;
     } else if (isResizingResponse.value) {
-      responsePanelWidth.value = startWidth.value
+      responsePanelWidth.value = startWidth.value;
     }
-    endResize()
+    endResize();
   }
-}
+};
 
 // 组件挂载时添加键盘监听
 onMounted(() => {
-  document.addEventListener('keydown', handleKeyDown)
-})
+  document.addEventListener("keydown", handleKeyDown);
+});
 
 // 组件卸载时清理
 onUnmounted(() => {
-  endResize()
-  document.removeEventListener('keydown', handleKeyDown)
+  endResize();
+  document.removeEventListener("keydown", handleKeyDown);
 
   // 清理可能残留的全局样式
-  document.body.style.userSelect = ''
-  document.body.style.cursor = ''
-  document.body.classList.remove('resizing-panel')
-})
+  document.body.style.userSelect = "";
+  document.body.style.cursor = "";
+  document.body.classList.remove("resizing-panel");
+});
 
 // 初始化
-initTheme()
-initPanelWidths()
+initTheme();
+initPanelWidths();
 </script>
 
 <style scoped>
@@ -484,7 +502,8 @@ initPanelWidths()
   gap: 8px;
 }
 
-.history-sider, .response-sider {
+.history-sider,
+.response-sider {
   background: #fff !important;
   border-left: 1px solid #f0f0f0;
   border-right: 1px solid #f0f0f0;
