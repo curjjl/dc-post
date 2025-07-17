@@ -1,0 +1,272 @@
+{
+  "method": "GET",
+  "url": "http://192.168.201.129:20831/bpce/cm_bpce_process_event_202507",
+  "queryParams": [
+    {
+      "key": "keys",
+      "value": "{\"DATE_FORMAT(create_time, '%Y-%m-%d %H:00:00')\":\"hour\",\"COUNT(*)\":\"process_count\"}",
+      "enabled": true
+    },
+    {
+      "key": "group",
+      "value": "{\"DATE_FORMAT(create_time, '%Y-%m-%d %H:00:00')\":1}",
+      "enabled": true
+    },
+    {
+      "key": "sort",
+      "value": "{\"hour\":1}",
+      "enabled": true
+    }
+  ],
+  "headers": [
+    {
+      "key": "Content-Type",
+      "value": "application/json",
+      "enabled": true
+    },
+    {
+      "key": "Authorization",
+      "value": "{{token}}",
+      "enabled": true
+    }
+  ],
+  "auth": {
+    "type": "none",
+    "basic": {
+      "username": "",
+      "password": ""
+    },
+    "bearer": {
+      "token": ""
+    },
+    "oauth2": {
+      "accessToken": ""
+    }
+  },
+  "body": {
+    "type": "raw",
+    "raw": "",
+    "formData": [
+      {
+        "key": "",
+        "value": "",
+        "enabled": true
+      }
+    ],
+    "urlencoded": [
+      {
+        "key": "",
+        "value": "",
+        "enabled": true
+      }
+    ]
+  },
+  "requestUrl": "http://192.168.201.129:20831/bpce/cm_bpce_process_event_202507?keys=%7B%22DATE_FORMAT(create_time%2C%20'%25Y-%25m-%25d%20%25H%3A00%3A00')%22%3A%22hour%22%2C%22COUNT(*)%22%3A%22process_count%22%7D&group=%7B%22DATE_FORMAT(create_time%2C%20'%25Y-%25m-%25d%20%25H%3A00%3A00')%22%3A1%7D&sort=%7B%22hour%22%3A1%7D",
+  "timestamp": 1752741902121,
+  "id": "1752741902121",
+  "status": 200,
+  "statusText": "OK",
+  "duration": 262,
+  "responseSize": "9.2 KB"
+}
+
+
+{
+    "id": "DFy1NoEfH_VS7-UzwN1DaCONNECTOR",
+    "name": "当前服务调试",
+    "desc": "当前服务调试",
+    "code": "restClient",
+    "creator": "jiangjl@unitechs.com",
+    "createTime": "2025-07-17 16:56:55",
+    "inParas": [
+        {
+            "paraType": "IN",
+            "paraCode": "method",
+            "paraName": "方法",
+            "paraNameEn": "",
+            "paraValue": "GET",
+            "formType": "INPUT",
+            "classCode": "",
+            "className": "",
+            "paraIndex": 0,
+            "required": true,
+            "visible": true,
+            "valueType": "String",
+            "paraDesc": "",
+            "paraDescEn": "",
+            "placeholder": "[GET, POST, DELETE, PATCH...]"
+        },
+        {
+            "paraType": "IN",
+            "paraCode": "url",
+            "paraName": "请求URL地址",
+            "paraNameEn": "",
+            "paraValue": "http://192.168.201.129:20831/bpce/cm_bpce_process_event_202507?keys={\"DATE_FORMAT(create_time, '%Y-%m-%d %H:00:00')\":\"hour\",\"COUNT(*)\":\"process_count\"}&group={\"DATE_FORMAT(create_time, '%Y-%m-%d %H:00:00')\":1}&sort={\"hour\":1}",
+            "formType": "INPUT",
+            "classCode": "",
+            "className": "",
+            "paraIndex": 1,
+            "required": true,
+            "visible": true,
+            "valueType": "String",
+            "paraDesc": "接口地址，例如：http://127.0.0.1/api/user/2/detail",
+            "paraDescEn": "",
+            "placeholder": ""
+        },
+        {
+            "paraType": "IN",
+            "paraCode": "headers",
+            "paraName": "请求头",
+            "paraNameEn": "",
+            "paraValue": "[\"Authorization:{{token}}\",\"Content-Type:application/json\"]",
+            "formType": "INPUT",
+            "classCode": "",
+            "className": "",
+            "paraIndex": 2,
+            "required": false,
+            "visible": true,
+            "valueType": "String",
+            "paraDesc": "键值对数组传递，key:value的方式传递,可以有多个header",
+            "paraDescEn": "",
+            "placeholder": "[\"Authorization:Bearer {{ token }}\",\"zy_token:web_{{ token }}\"]"
+        },
+        {
+            "paraType": "IN",
+            "paraCode": "queryParams",
+            "paraName": "查询参数",
+            "paraNameEn": "",
+            "paraValue": "[\"keys={\\\"DATE_FORMAT(create_time, '%Y-%m-%d %H:00:00')\\\":\\\"hour\\\",\\\"COUNT(*)\\\":\\\"process_count\\\"}\",\"group={\\\"DATE_FORMAT(create_time, '%Y-%m-%d %H:00:00')\\\":1}\",\"sort={\\\"hour\\\":1}\"]",
+            "formType": "INPUT",
+            "classCode": "",
+            "className": "",
+            "paraIndex": 3,
+            "required": false,
+            "visible": true,
+            "valueType": "String",
+            "paraDesc": "请求的查询参数, 键值对数组传递",
+            "paraDescEn": "",
+            "placeholder": "[\"page=2\", \"pageSize=10\"]"
+        },
+        {
+            "paraType": "IN",
+            "paraCode": "requestContentType",
+            "paraName": "请求MIME类型",
+            "paraNameEn": "",
+            "paraValue": "application/json",
+            "formType": "INPUT",
+            "classCode": "",
+            "className": "",
+            "paraIndex": 4,
+            "required": false,
+            "visible": true,
+            "valueType": "String",
+            "paraDesc": "请求体的Content-Type",
+            "paraDescEn": "",
+            "placeholder": "application/json"
+        },
+        {
+            "paraType": "IN",
+            "paraCode": "body",
+            "paraName": "请求体",
+            "paraNameEn": "",
+            "paraValue": "{}",
+            "formType": "INPUT",
+            "classCode": "",
+            "className": "",
+            "paraIndex": 5,
+            "required": false,
+            "visible": true,
+            "valueType": "String",
+            "paraDesc": "请求体",
+            "paraDescEn": "",
+            "placeholder": ""
+        },
+        {
+            "paraType": "IN",
+            "paraCode": "isPassError",
+            "paraName": "忽略HTTP响应码",
+            "paraNameEn": "",
+            "paraValue": "false",
+            "formType": "INPUT",
+            "classCode": "",
+            "className": "",
+            "paraIndex": 6,
+            "required": false,
+            "visible": true,
+            "valueType": "Boolean",
+            "paraDesc": "HTTP异常不阻塞流程",
+            "paraDescEn": "",
+            "placeholder": ""
+        },
+        {
+            "paraType": "IN",
+            "paraCode": "contentType",
+            "paraName": "响应MIME类型",
+            "paraNameEn": "",
+            "paraValue": "application/json",
+            "formType": "INPUT",
+            "classCode": "",
+            "className": "",
+            "paraIndex": 7,
+            "required": false,
+            "visible": true,
+            "valueType": "String",
+            "paraDesc": "响应体的Content-Type",
+            "paraDescEn": "",
+            "placeholder": "application/json"
+        },
+        {
+            "paraType": "IN",
+            "paraCode": "isHttpClient",
+            "paraName": "启用服务客户端",
+            "paraNameEn": "",
+            "paraValue": "1",
+            "formType": "INPUT",
+            "classCode": "",
+            "className": "",
+            "paraIndex": 8,
+            "required": false,
+            "visible": true,
+            "valueType": "String",
+            "paraDesc": "通过服务客户端发起请求：1是0否",
+            "paraDescEn": "",
+            "placeholder": "0"
+        }
+    ],
+    "outParas": [
+        {
+            "paraType": "OUT",
+            "paraCode": "data",
+            "paraName": "输入参数名",
+            "paraNameEn": "",
+            "paraValue": "data",
+            "formType": "INPUT",
+            "classCode": "",
+            "className": "",
+            "paraIndex": 0,
+            "required": false,
+            "visible": true,
+            "valueType": "String",
+            "paraDesc": "输入到BPCE的参数名",
+            "paraDescEn": "",
+            "placeholder": ""
+        },
+        {
+            "paraType": "OUT",
+            "paraCode": "response",
+            "paraName": "响应体数据",
+            "paraNameEn": "",
+            "paraValue": "\"<!DOCTYPE html><html lang=\\\"en\\\"><head>\\n  <meta charset=\\\"utf-8\\\">\\n  <title>主页</title>\\n  <base href=\\\"/access-view/\\\">\\n  <meta name=\\\"viewport\\\" content=\\\"width=device-width, initial-scale=1\\\">\\n  <link rel=\\\"icon\\\" type=\\\"image/x-icon\\\" href=\\\"/favicon.ico\\\">\\n<style>body{margin:0!important}</style><link rel=\\\"stylesheet\\\" href=\\\"/access-view/access_view_static/styles.4d25b845d602f2ed.css\\\" media=\\\"print\\\" onload=\\\"this.media='all'\\\"><noscript><link rel=\\\"stylesheet\\\" href=\\\"/access-view/access_view_static/styles.4d25b845d602f2ed.css\\\"></noscript></head>\\n<body>\\n  <app-root></app-root>\\n<script src=\\\"/access-view/access_view_static/runtime.47e8a5c292f60c3d.js\\\" type=\\\"module\\\"></script><script src=\\\"/access-view/access_view_static/polyfills.e0838306daec8847.js\\\" type=\\\"module\\\"></script><script src=\\\"/access-view/access_view_static/main.a478893865427a9b.js\\\" type=\\\"module\\\"></script>\\n\\n</body></html>\"",
+            "formType": "INPUT",
+            "classCode": "",
+            "className": "",
+            "paraIndex": 0,
+            "required": false,
+            "visible": true,
+            "valueType": "String",
+            "paraDesc": "响应体数据的变量名",
+            "paraDescEn": "",
+            "placeholder": ""
+        }
+    ]
+}

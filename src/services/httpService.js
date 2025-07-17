@@ -1,6 +1,121 @@
 import axios from 'axios'
 import { processEnvironmentVariables } from '@/utils/envUtils.js'
 
+// 全局axios实例配置
+const createAxiosInstance = () => {
+  const instance = axios.create({
+    timeout: 30000, // 30秒超时
+    maxRedirects: 5,
+    validateStatus: (status) => status < 500, // 只有5xx错误才抛出异常
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
+    }
+  })
+
+  // 请求拦截器
+  instance.interceptors.request.use(
+    (config) => {
+      // 添加请求时间戳
+      config.metadata = { startTime: Date.now() }
+
+      // 添加请求ID用于追踪
+      config.requestId = `req_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`
+
+      // 自动添加认证token（如果存在）
+      const token = localStorage.getItem('zy_token') || sessionStorage.getItem('zy_token')
+      if (token && !config.headers.Authorization) {
+        config.headers.Authorization = `Bearer ${token}`
+        // config.headers.zy_token = token
+        // config.headers['access-token'] = token
+
+      }
+
+      console.log(`[HTTP Request] ${config.requestId} ${config.method?.toUpperCase()} ${config.url}`)
+      return config
+    },
+    (error) => {
+      console.error('[HTTP Request Error]', error)
+      return Promise.reject(error)
+    }
+  )
+
+  // 响应拦截器
+  instance.interceptors.response.use(
+    (response) => {
+      // 计算请求耗时
+      const duration = Date.now() - response.config.metadata.startTime
+      console.log(`[HTTP Response] ${response.config.requestId} ${response.status} ${duration}ms`)
+
+      // 添加响应元数据
+      response.metadata = {
+        duration,
+        requestId: response.config.requestId,
+        timestamp: new Date().toISOString()
+      }
+
+      return response
+    },
+    (error) => {
+      // 计算请求耗时
+      const duration = error.config?.metadata ? Date.now() - error.config.metadata.startTime : 0
+      const requestId = error.config?.requestId || 'unknown'
+
+      console.error(`[HTTP Error] ${requestId} ${error.response?.status || 'Network Error'} ${duration}ms`, error.message)
+
+      // 统一错误处理
+      if (error.response) {
+        // 服务器响应错误
+        const { status } = error.response
+
+        // 401 未授权 - 清除token并跳转登录
+        if (status === 401) {
+          localStorage.removeItem('zy_token')
+          sessionStorage.removeItem('zy_token')
+          // 可以在这里添加跳转到登录页的逻辑
+          console.warn('[HTTP] 401 Unauthorized - Token cleared')
+        }
+
+        // 403 禁止访问
+        if (status === 403) {
+          console.warn('[HTTP] 403 Forbidden - Access denied')
+        }
+
+        // 添加错误元数据
+        error.metadata = {
+          duration,
+          requestId,
+          timestamp: new Date().toISOString(),
+          type: 'response_error'
+        }
+      } else if (error.request) {
+        // 网络错误
+        error.metadata = {
+          duration,
+          requestId,
+          timestamp: new Date().toISOString(),
+          type: 'network_error'
+        }
+      } else {
+        // 其他错误
+        error.metadata = {
+          duration,
+          requestId,
+          timestamp: new Date().toISOString(),
+          type: 'unknown_error'
+        }
+      }
+
+      return Promise.reject(error)
+    }
+  )
+
+  return instance
+}
+
+// 创建全局axios实例
+const globalAxios = createAxiosInstance()
+
 /**
  * HTTP请求服务类
  * 封装axios，提供API测试所需的功能
