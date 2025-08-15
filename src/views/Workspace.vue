@@ -21,9 +21,9 @@
             <template #icon><HistoryOutlined /></template>
             历史记录
           </a-button>
-          <a-button type="text" @click="toggleTheme">
-            <template #icon><BulbOutlined /></template>
-            {{ isDarkMode ? "浅色主题" : "深色主题" }}
+          <a-button type="text" @click="showThemeSwitcher = true">
+            <template #icon><BgColorsOutlined /></template>
+            主题换肤
           </a-button>
         </div>
       </div>
@@ -115,6 +115,11 @@
       v-model:visible="showCodeGenerator"
       :request-data="currentRequestData"
     />
+
+    <!-- 主题切换器 -->
+    <ThemeSwitcher
+      v-model:visible="showThemeSwitcher"
+    />
   </a-layout>
 </template>
 
@@ -123,7 +128,7 @@ import { ref, computed, watch, onMounted, onUnmounted, nextTick } from "vue";
 import { useRouter } from "vue-router";
 import {
   HistoryOutlined,
-  BulbOutlined,
+  BgColorsOutlined,
   SettingOutlined,
   CodeOutlined,
 } from "@ant-design/icons-vue";
@@ -132,6 +137,7 @@ import ResponsePanel from "@/components/ResponsePanel.vue";
 import HistoryPanel from "@/components/HistoryPanel.vue";
 import EnvManager from "@/components/EnvManager.vue";
 import CodeGenerator from "@/components/CodeGenerator.vue";
+import ThemeSwitcher from "@/components/ThemeSwitcher.vue";
 import httpService from "@/services/httpService.js";
 import {
   buildRouteObject,
@@ -200,16 +206,9 @@ const currentRequestData = ref({});
 // 对话框状态
 const showEnvManager = ref(false);
 const showCodeGenerator = ref(false);
+const showThemeSwitcher = ref(false);
 const refreshFlag = ref(0);
 
-// 主题状态
-const isDarkMode = ref(false);
-
-// 初始化主题状态
-const initTheme = () => {
-  const savedTheme = localStorage.getItem("theme");
-  isDarkMode.value = savedTheme === "dark";
-};
 
 // 初始化面板宽度
 const initPanelWidths = () => {
@@ -266,14 +265,6 @@ const refreshHistoryPanel = () => {
   }, 100);
 };
 
-// 主题切换
-const toggleTheme = () => {
-  if (window.toggleTheme) {
-    window.toggleTheme();
-    // 更新本地状态
-    isDarkMode.value = !isDarkMode.value;
-  }
-};
 
 // 处理发送请求
 const handleSendRequest = async (requestData) => {
@@ -731,7 +722,6 @@ onUnmounted(() => {
 });
 
 // 初始化
-initTheme();
 initPanelWidths();
 </script>
 

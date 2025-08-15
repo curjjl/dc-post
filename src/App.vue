@@ -1,49 +1,96 @@
 <template>
-  <div id="app" :data-theme="isDarkMode ? 'dark' : 'light'">
-    <a-config-provider :theme="{ algorithm: isDarkMode ? theme.darkAlgorithm : theme.defaultAlgorithm }">
+  <div id="app">
+    <a-config-provider :theme="currentThemeConfig">
       <router-view />
     </a-config-provider>
   </div>
 </template>
 
 <script setup>
-import { ref, provide } from 'vue'
-import { theme } from 'ant-design-vue'
+import { ref, computed, provide, onMounted, onUnmounted } from 'vue'
 import { initializeMonaco } from '@/utils/monaco-config'
+import { themeManager, themeUtils } from '@/utils/themeConfig'
 
-// 主题切换状态
-const isDarkMode = ref(false)
+// 当前主题状态
+const currentTheme = ref(themeManager.getCurrentTheme())
 
-// 提供主题状态给子组件
-provide('isDarkTheme', isDarkMode)
+// 计算Ant Design的主题配置
+const currentThemeConfig = computed(() => ({
+  algorithm: currentTheme.value.algorithm,
+  token: currentTheme.value.token
+}))
 
-// 提供全局主题切换方法
-const toggleTheme = () => {
-  isDarkMode.value = !isDarkMode.value
-  localStorage.setItem('theme', isDarkMode.value ? 'dark' : 'light')
-  // 同步设置body的主题属性，确保Modal等渲染到body的组件也能获取主题
-  document.body.setAttribute('data-theme', isDarkMode.value ? 'dark' : 'light')
+// 计算是否为深色主题
+const isDarkTheme = computed(() => themeUtils.isDarkTheme())
+
+// 提供主题相关状态和方法给子组件
+provide('themeManager', themeManager)
+provide('currentTheme', currentTheme)
+provide('isDarkTheme', isDarkTheme)
+
+// 主题切换方法
+const setTheme = (themeKey) => {
+  return themeManager.setTheme(themeKey)
 }
 
-// 初始化主题
-const savedTheme = localStorage.getItem('theme')
-if (savedTheme) {
-  isDarkMode.value = savedTheme === 'dark'
+// 获取所有主题
+const getAllThemes = () => {
+  return themeManager.getAllThemes()
 }
-// 初始化时设置body的主题属性
-document.body.setAttribute('data-theme', isDarkMode.value ? 'dark' : 'light')
 
-// 初始化Monaco Editor
-initializeMonaco()
+// 订阅主题变化
+let unsubscribe = null
 
-// 将主题切换方法暴露给全局
-window.toggleTheme = toggleTheme
+onMounted(() => {
+  // 初始化主题
+  themeManager.applyCssVariables()
+  
+  // 订阅主题变化
+  unsubscribe = themeManager.subscribe((theme) => {
+    currentTheme.value = theme
+  })
+  
+  // 初始化Monaco Editor
+  initializeMonaco()
+  
+  // 将主题相关方法暴露给全局（兼容性）
+  window.setTheme = setTheme
+  window.getAllThemes = getAllThemes
+  window.themeManager = themeManager
+  
+  // 兼容旧的toggleTheme方法
+  window.toggleTheme = () => {
+    const isCurrentlyDark = themeUtils.isDarkTheme()
+    setTheme(isCurrentlyDark ? 'light' : 'dark')
+  }
+})
+
+onUnmounted(() => {
+  if (unsubscribe) {
+    unsubscribe()
+  }
+})
 </script>
 
 <style>
+/* CSS变量定义 - 由主题管理器动态设置 */
+:root {
+  /* 默认值，会被themeManager.applyCssVariables()覆盖 */
+  --app-bg-color: #f5f5f5;
+  --app-sidebar-bg: #ffffff;
+  --app-header-bg: #ffffff;
+  --app-border-color: #d9d9d9;
+  --app-text-primary: #262626;
+  --app-text-secondary: #8c8c8c;
+  --app-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
 #app {
   height: 100vh;
   overflow: hidden;
+  background: var(--app-bg-color);
+  color: var(--app-text-primary);
+  transition: all 0.3s ease;
 }
 
 body {
@@ -52,6 +99,7 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB',
     'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif, 'Apple Color Emoji',
     'Segoe UI Emoji', 'Segoe UI Symbol';
+  transition: all 0.3s ease;
 }
 
 .ant-layout {
@@ -59,166 +107,156 @@ body {
 }
 
 .ant-layout-sider {
-  background: #fff !important;
+  background: var(--app-sidebar-bg) !important;
+  border-right: 1px solid var(--app-border-color) !important;
+  transition: all 0.3s ease;
 }
 
 .ant-layout-content {
-  background: #f5f5f5;
+  background: var(--app-bg-color);
+  transition: all 0.3s ease;
 }
 
-/* 深色主题下的全局样式调整 */
+.ant-layout-header {
+  background: var(--app-header-bg) !important;
+  border-bottom: 1px solid var(--app-border-color) !important;
+  transition: all 0.3s ease;
+}
+
+/* 通用组件样式增强 */
+.ant-card {
+  box-shadow: var(--app-shadow);
+  transition: all 0.3s ease;
+}
+
+.ant-btn {
+  transition: all 0.3s ease;
+}
+
+.ant-input, .ant-select-selector {
+  transition: all 0.3s ease;
+}
+
+/* 深色主题特殊样式 */
 [data-theme="dark"] {
   color-scheme: dark;
 }
 
-[data-theme="dark"] .ant-layout-sider {
-  background: #141414 !important;
-  border-color: #303030 !important;
+/* 滚动条美化 */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
 }
 
-[data-theme="dark"] .ant-layout-content {
-  background: #000;
+::-webkit-scrollbar-track {
+  background: var(--app-bg-color);
 }
 
-[data-theme="dark"] .ant-layout-header {
-  background: #141414 !important;
-  border-color: #303030 !important;
+::-webkit-scrollbar-thumb {
+  background: var(--app-border-color);
+  border-radius: 3px;
+  transition: all 0.3s ease;
 }
 
-/* 深色主题下的卡片和面板 */
-[data-theme="dark"] .ant-card {
-  background: #141414 !important;
-  border-color: #303030 !important;
+::-webkit-scrollbar-thumb:hover {
+  background: var(--app-text-secondary);
 }
 
-[data-theme="dark"] .ant-card-head {
-  background: #1f1f1f !important;
-  border-color: #303030 !important;
+/* 主题切换动画 */
+* {
+  transition-property: background-color, border-color, color, box-shadow, background;
+  transition-duration: 0.3s;
+  transition-timing-function: ease;
 }
 
-/* 深色主题下的输入框 */
-[data-theme="dark"] .ant-input,
-[data-theme="dark"] .ant-select-selector {
-  background: #1f1f1f !important;
-  border-color: #434343 !important;
-  color: #fff !important;
+/* 主题预览卡片样式 */
+.theme-preview-card {
+  position: relative;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: all 0.3s ease;
 }
 
-[data-theme="dark"] .ant-input:hover,
-[data-theme="dark"] .ant-select:hover .ant-select-selector {
-  border-color: #177ddc !important;
+.theme-preview-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-[data-theme="dark"] .ant-input:focus,
-[data-theme="dark"] .ant-select-focused .ant-select-selector {
-  border-color: #177ddc !important;
-  box-shadow: 0 0 0 2px rgba(23, 125, 220, 0.2) !important;
+.theme-preview-card.active {
+  border-color: var(--ant-color-primary);
+  box-shadow: 0 0 0 2px rgba(22, 119, 255, 0.2);
 }
 
-/* 深色主题下的按钮 */
-[data-theme="dark"] .ant-btn-text {
-  color: #fff !important;
+.theme-preview-content {
+  padding: 16px;
+  border-radius: 6px;
+  position: relative;
+  overflow: hidden;
 }
 
-[data-theme="dark"] .ant-btn-text:hover {
-  background: #262626 !important;
+.theme-preview-colors {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 8px;
 }
 
-/* 深色主题下的标签页 */
-[data-theme="dark"] .ant-tabs-tab {
-  color: #fff !important;
+.theme-preview-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
-[data-theme="dark"] .ant-tabs-tab:hover {
-  color: #177ddc !important;
+.theme-preview-name {
+  font-weight: 500;
+  font-size: 14px;
+  margin-bottom: 4px;
 }
 
-[data-theme="dark"] .ant-tabs-tab-active {
-  color: #177ddc !important;
+.theme-preview-description {
+  font-size: 12px;
+  opacity: 0.7;
 }
 
-[data-theme="dark"] .ant-tabs-ink-bar {
-  background: #177ddc !important;
+/* 主题切换器组件样式 */
+.theme-switcher {
+  padding: 20px;
 }
 
-/* 深色主题下的表格 */
-[data-theme="dark"] .ant-table {
-  background: #141414 !important;
+.theme-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
 }
 
-[data-theme="dark"] .ant-table-thead > tr > th {
-  background: #1f1f1f !important;
-  border-color: #303030 !important;
-  color: #fff !important;
+.theme-actions {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--app-border-color);
 }
 
-[data-theme="dark"] .ant-table-tbody > tr > td {
-  border-color: #303030 !important;
-  color: #fff !important;
+/* 自定义主题编辑器样式 */
+.theme-editor {
+  padding: 20px;
 }
 
-[data-theme="dark"] .ant-table-tbody > tr:hover > td {
-  background: #262626 !important;
+.color-picker-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
 }
 
-/* 深色主题下的下拉菜单 */
-[data-theme="dark"] .ant-select-dropdown {
-  background: #1f1f1f !important;
-  border-color: #434343 !important;
+.color-picker-label {
+  font-weight: 500;
 }
 
-[data-theme="dark"] .ant-select-item {
-  color: #fff !important;
-}
-
-[data-theme="dark"] .ant-select-item:hover {
-  background: #262626 !important;
-}
-
-[data-theme="dark"] .ant-select-item-option-selected {
-  background: #111b26 !important;
-  color: #177ddc !important;
-}
-
-/* 深色主题下的模态框 */
-[data-theme="dark"] .ant-modal-content {
-  background: #141414 !important;
-}
-
-[data-theme="dark"] .ant-modal-header {
-  background: #1f1f1f !important;
-  border-color: #303030 !important;
-}
-
-[data-theme="dark"] .ant-modal-title {
-  color: #fff !important;
-}
-
-[data-theme="dark"] .ant-modal-footer {
-  background: #1f1f1f !important;
-  border-color: #303030 !important;
-}
-
-/* 深色主题下的空状态 */
-[data-theme="dark"] .ant-empty-description {
-  color: #8c8c8c !important;
-}
-
-/* 深色主题下的分割线 */
-[data-theme="dark"] .ant-divider {
-  border-color: #303030 !important;
-}
-
-/* 深色主题下的滚动条 */
-[data-theme="dark"] ::-webkit-scrollbar-track {
-  background: #1f1f1f !important;
-}
-
-[data-theme="dark"] ::-webkit-scrollbar-thumb {
-  background: #434343 !important;
-}
-
-[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
-  background: #595959 !important;
+.color-picker-input {
+  width: 60px;
+  height: 30px;
+  border: 1px solid var(--app-border-color);
+  border-radius: 4px;
+  cursor: pointer;
 }
 </style>

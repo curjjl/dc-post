@@ -435,7 +435,7 @@ onMounted(() => {
 
 .env-selector {
   padding-bottom: 16px;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--app-border-color);
 }
 
 .variables-section {
@@ -451,16 +451,19 @@ onMounted(() => {
 
 .section-header h4 {
   margin: 0;
+  color: var(--app-text-primary);
 }
 
 .preview-section {
-  background: #fafafa;
+  background: var(--app-sidebar-bg);
+  border: 1px solid var(--app-border-color);
   padding: 16px;
   border-radius: 6px;
 }
 
 .preview-section h4 {
   margin: 0 0 12px 0;
+  color: var(--app-text-primary);
 }
 
 .example-item {
@@ -473,21 +476,24 @@ onMounted(() => {
 .example-label {
   min-width: 60px;
   font-weight: 500;
+  color: var(--app-text-primary);
 }
 
 .example-item code {
-  background: #f5f5f5;
+  background: var(--app-bg-color);
+  border: 1px solid var(--app-border-color);
   padding: 2px 6px;
   border-radius: 3px;
   font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
   font-size: 12px;
+  color: var(--app-text-secondary);
 }
 
 .actions {
   display: flex;
   justify-content: flex-end;
   padding-top: 16px;
-  border-top: 1px solid #f0f0f0;
+  border-top: 1px solid var(--app-border-color);
 }
 
 :deep(.ant-table-tbody > tr > td) {
@@ -508,67 +514,22 @@ onMounted(() => {
   border-color: #ff4d4f;
 }
 
-/* 深色主题样式 */
-[data-theme="dark"] .env-manager .env-selector {
-  border-bottom: 1px solid #303030;
-}
-
-[data-theme="dark"] .env-manager .section-header h4 {
-  color: #fff;
-}
-
-[data-theme="dark"] .env-manager .preview-section {
-  background: #1f1f1f;
-  border: 1px solid #434343;
-}
-
-[data-theme="dark"] .env-manager .preview-section h4 {
-  color: #fff;
-}
-
-[data-theme="dark"] .env-manager .example-label {
-  color: #d9d9d9;
-  font-weight: 500;
-}
-
-[data-theme="dark"] .env-manager .example-item code {
-  background: #262626;
-  color: #fff;
-  border: 1px solid #434343;
-}
-
-[data-theme="dark"] .env-manager .actions {
-  border-top: 1px solid #303030;
-}
-
-[data-theme="dark"] .env-manager :deep(.ant-input) {
-  background: #1f1f1f;
-  border-color: #434343;
-  color: #fff;
-}
-
-[data-theme="dark"] .env-manager :deep(.ant-input:hover) {
-  border-color: #177ddc;
-}
-
-[data-theme="dark"] .env-manager :deep(.ant-input:focus) {
-  border-color: #177ddc;
-  box-shadow: 0 0 0 2px rgba(23, 125, 220, 0.2);
-}
-
-[data-theme="dark"] .env-manager :deep(.ant-table-thead > tr > th) {
-  background: #262626;
-  color: #d9d9d9;
-  border-bottom: 1px solid #434343;
-}
-
-[data-theme="dark"] .env-manager :deep(.ant-table-tbody > tr > td) {
-  background: #1f1f1f;
-  color: #d9d9d9;
-  border-bottom: 1px solid #303030;
-}
-
-[data-theme="dark"] .env-manager :deep(.ant-table-tbody > tr:hover > td) {
-  background: #262626;
+/* 响应式布局 */
+@media (max-width: 768px) {
+  .env-manager {
+    gap: 16px;
+  }
+  
+  .env-selector {
+    padding-bottom: 12px;
+  }
+  
+  .preview-section {
+    padding: 12px;
+  }
+  
+  .actions {
+    padding-top: 12px;
+  }
 }
 </style>

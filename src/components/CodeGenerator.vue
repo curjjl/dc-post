@@ -483,7 +483,7 @@ onMounted(() => {
 
 .language-selector {
   padding-bottom: 12px;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--app-border-color);
 }
 
 .code-display {
@@ -499,13 +499,13 @@ onMounted(() => {
 
 .code-title {
   font-weight: 500;
-  color: #333;
+  color: var(--app-text-primary);
 }
 
 .code-container {
-  border: 1px solid #d9d9d9;
+  border: 1px solid var(--app-border-color);
   border-radius: 6px;
-  background: #fafafa;
+  background: var(--app-sidebar-bg);
   max-height: 400px;
   overflow: auto;
 }
@@ -518,11 +518,13 @@ onMounted(() => {
   line-height: 1.5;
   white-space: pre-wrap;
   word-break: break-all;
+  color: var(--app-text-primary);
 }
 
 .options-section {
   padding: 16px;
-  background: #fafafa;
+  background: var(--app-sidebar-bg);
+  border: 1px solid var(--app-border-color);
   border-radius: 6px;
 }
 
@@ -530,7 +532,7 @@ onMounted(() => {
   display: flex;
   justify-content: flex-end;
   padding-top: 16px;
-  border-top: 1px solid #f0f0f0;
+  border-top: 1px solid var(--app-border-color);
 }
 
 /* 滚动条样式 */
@@ -540,72 +542,39 @@ onMounted(() => {
 }
 
 .code-container::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  background: var(--app-bg-color);
 }
 
 .code-container::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
+  background: var(--app-border-color);
   border-radius: 3px;
 }
 
 .code-container::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
+  background: var(--app-text-secondary);
 }
 
-/* 深色主题样式 */
-[data-theme="dark"] .code-generator .language-selector {
-  border-bottom: 1px solid #303030;
-}
-
-[data-theme="dark"] .code-generator .code-title {
-  color: #fff;
-}
-
-[data-theme="dark"] .code-generator .code-container {
-  border-color: #434343;
-  background: #1f1f1f;
-}
-
-[data-theme="dark"] .code-generator .code-container pre {
-  color: #fff;
-}
-
-[data-theme="dark"] .code-generator .options-section {
-  background: #1f1f1f;
-  border: 1px solid #434343;
-}
-
-[data-theme="dark"] .code-generator .actions {
-  border-top: 1px solid #303030;
-}
-
-[data-theme="dark"] .code-generator .code-container::-webkit-scrollbar-track {
-  background: #262626;
-}
-
-[data-theme="dark"] .code-generator .code-container::-webkit-scrollbar-thumb {
-  background: #434343;
-}
-
-[data-theme="dark"] .code-generator .code-container::-webkit-scrollbar-thumb:hover {
-  background: #595959;
-}
-
+/* 深色主题特殊样式补充 */
 [data-theme="dark"] .code-generator .options-section :deep(.ant-checkbox-wrapper) {
-  color: #d9d9d9;
+  color: var(--app-text-primary);
 }
 
 [data-theme="dark"] .code-generator .options-section :deep(.ant-checkbox-wrapper:hover) {
-  color: #fff;
+  color: var(--app-text-primary);
 }
 
-[data-theme="dark"] .code-generator .options-section :deep(.ant-checkbox-wrapper .ant-checkbox-checked .ant-checkbox-inner) {
-  background-color: #177ddc;
-  border-color: #177ddc;
-}
-
-[data-theme="dark"] .code-generator .options-section :deep(.ant-checkbox-wrapper .ant-checkbox-inner) {
-  background-color: #1f1f1f;
-  border-color: #434343;
+/* 主题无关的响应式布局 */
+@media (max-width: 768px) {
+  .code-generator {
+    padding: 16px;
+  }
+  
+  .code-container {
+    max-height: 300px;
+  }
+  
+  .options-section {
+    padding: 12px;
+  }
 }
 </style>
