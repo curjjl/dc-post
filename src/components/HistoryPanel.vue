@@ -346,6 +346,7 @@ const loadMore = async () => {
 
 // 选择请求
 const selectRequest = (item) => {
+  console.log('[HistoryPanel] 选择历史记录，ID:', item.fid, '不触发列表刷新');
   emit("select-request", item);
   message.success("已加载请求配置");
 };
@@ -453,37 +454,42 @@ watch(
 // 监听查询参数变化
 watch(
   () => [
-    props.id,
-    props.name,
-    props.code,
-    props.pid,
-    props.dir,
-    props.refreshFlag,
+    props.pid,      // 项目ID变化需要重新加载
+    props.dir,      // 目录ID变化需要重新加载  
+    props.refreshFlag, // 刷新标志变化需要刷新
   ],
   (newParams, oldParams) => {
-    // console.log("查询参数变化:", {
-    //   id: newParams[0],
-    //   name: newParams[1],
-    //   code: newParams[2],
-    //   pid: newParams[3],
-    //   dir: newParams[4],
-    //   refreshFlag: newParams[5],
-    // });
+    const [newPid, newDir, newRefreshFlag] = newParams;
+    const [oldPid, oldDir, oldRefreshFlag] = oldParams || [];
+    
+    // 只在开发环境显示详细日志
+    if (import.meta.env.DEV) {
+      console.log("历史面板参数变化:", {
+        pid: { old: oldPid, new: newPid },
+        dir: { old: oldDir, new: newDir },
+        refreshFlag: { old: oldRefreshFlag, new: newRefreshFlag }
+      });
+    }
     
     // 检查是否只有refreshFlag发生了变化
     const isRefreshFlagOnly = oldParams && 
-      newParams[0] === oldParams[0] &&
-      newParams[1] === oldParams[1] &&
-      newParams[2] === oldParams[2] &&
-      newParams[3] === oldParams[3] &&
-      newParams[4] === oldParams[4] &&
-      newParams[5] !== oldParams[5];
+      newPid === oldPid &&
+      newDir === oldDir &&
+      newRefreshFlag !== oldRefreshFlag;
+    
+    // 检查项目或目录是否发生变化
+    const isProjectOrDirChanged = !oldParams || 
+      newPid !== oldPid || 
+      newDir !== oldDir;
     
     if (isRefreshFlagOnly) {
+      console.log('[HistoryPanel] 仅刷新标志变化，执行智能刷新');
       handleQueryParamsChange("api", "refresh");
-    } else {
+    } else if (isProjectOrDirChanged) {
+      console.log('[HistoryPanel] 项目或目录变化，执行完全重载');
       handleQueryParamsChange();
     }
+    // 如果只是id变化（选择历史记录），不做任何处理
   },
   { immediate: true }
 );
@@ -498,6 +504,12 @@ function handleQueryParamsChange(type = "api") {
     dir: props.dir,
   };
 
+  // 检查是否有必要的参数（pid是必须的）
+  if (!props.pid) {
+    console.log('[HistoryPanel] 缺少必要的项目ID，跳过历史记录加载');
+    return;
+  }
+
   if (hasValidQueryParams(queryParams)) {
     // 构建API查询参数
     const apiParams = buildApiQueryParams(queryParams);
@@ -506,9 +518,11 @@ function handleQueryParamsChange(type = "api") {
     const isRefreshTriggered = arguments[1] === 'refresh';
     
     if (isRefreshTriggered && historyList.value.length > 0) {
+      console.log('[HistoryPanel] 执行智能刷新');
       // 智能刷新：仅获取最新的记录
       fetchHistory(apiParams, type, true);
     } else {
+      console.log('[HistoryPanel] 执行完全重载');
       // 完全重载：重置分页状态
       currentPage.value = 1;
       hasMore.value = true;
