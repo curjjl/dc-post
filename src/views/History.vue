@@ -48,15 +48,36 @@
           class="empty-state"
         >
           <a-empty
+            v-if="!loadError"
             :description="`暂无${activeKey === 'api' ? '历史记录' : '数据'}`"
           >
             <template #image>
               <HistoryOutlined style="font-size: 48px; color: #d9d9d9" />
             </template>
-            <a-button type="primary" @click="goBackToWorkspace">
+            <a-button
+              v-if="!searchKeyword"
+              type="primary"
+              @click="goBackToWorkspace"
+            >
               开始发送请求
             </a-button>
+            <a-button v-else @click="clearSearch"> 清空搜索 </a-button>
           </a-empty>
+
+          <!-- 首次加载错误 -->
+          <a-result
+            v-else
+            status="error"
+            title="加载失败"
+            :sub-title="loadError"
+          >
+            <template #extra>
+              <a-space>
+                <a-button type="primary" @click="retryLoad"> 重试 </a-button>
+                <a-button @click="goBackToWorkspace"> 返回工作台 </a-button>
+              </a-space>
+            </template>
+          </a-result>
         </div>
         <div
           v-for="item in displayedHistory"
@@ -147,16 +168,33 @@
           </div>
         </div>
         <!-- 加载更多指示器 -->
-        <div v-if="loading" class="loading-indicator">
+        <div v-if="loading && !loadError" class="loading-indicator">
           <a-spin size="large">
             <template #indicator>
               <LoadingOutlined style="font-size: 24px" spin />
             </template>
           </a-spin>
-          <p>加载中...</p>
+          <p>{{ isLoadingMore ? "加载更多..." : "加载中..." }}</p>
         </div>
+
+        <!-- 加载错误提示 -->
+        <div v-if="loadError && displayedHistory.length > 0" class="load-error">
+          <a-result status="warning" title="加载失败" :sub-title="loadError">
+            <template #extra>
+              <a-button type="primary" @click="retryLoad">
+                重试加载 ({{ retryCount }}/{{ maxRetries }})
+              </a-button>
+            </template>
+          </a-result>
+        </div>
+
         <!-- 没有更多数据提示 -->
-        <div v-if="!hasMore && displayedHistory.length > 0" class="no-more">
+        <div
+          v-if="
+            !hasMore && displayedHistory.length > 0 && !loading && !loadError
+          "
+          class="no-more"
+        >
           <a-divider>
             <span style="color: #999; font-size: 12px">已全部加载</span>
           </a-divider>
@@ -224,45 +262,28 @@ const displayedHistory = ref([]);
 const searchKeyword = ref("");
 const loading = ref(false);
 const scrollContainer = ref(null);
+const loadError = ref(null);
+const retryCount = ref(0);
+const maxRetries = 3;
 
 // 分页相关
 const pageSize = 10;
 const currentPage = ref(1);
 const hasMore = ref(true);
+const isInitialLoad = ref(true);
+const searchParams = ref(null);
+
+// 节流控制
+let loadMoreTimeout = null;
+const isLoadingMore = ref(false);
 
 // 搜索防抖
 let searchTimeout = null;
 
-// 过滤后的历史记录
+// 过滤后的历史记录（现在主要用于前端显示逻辑，搜索已移至后台）
 const filteredHistory = computed(() => {
-  if (!searchKeyword.value) {
-    return historyList.value;
-  }
-  return historyList.value.filter(
-    (item) =>
-      item.url.toLowerCase().includes(searchKeyword.value.toLowerCase()) ||
-      item.method.toLowerCase().includes(searchKeyword.value.toLowerCase()) ||
-      (item.queryParams &&
-        item.queryParams.some(
-          (param) =>
-            param.key
-              .toLowerCase()
-              .includes(searchKeyword.value.toLowerCase()) ||
-            param.value
-              .toLowerCase()
-              .includes(searchKeyword.value.toLowerCase())
-        )) ||
-      (item.headers &&
-        item.headers.some(
-          (header) =>
-            header.key
-              .toLowerCase()
-              .includes(searchKeyword.value.toLowerCase()) ||
-            header.value
-              .toLowerCase()
-              .includes(searchKeyword.value.toLowerCase())
-        ))
-  );
+  // 由于搜索已在后台进行，这里主要返回已显示的历史记录
+  return displayedHistory.value;
 });
 
 // 统计信息
@@ -341,46 +362,106 @@ const getEnabledHeaders = (headers) => {
 // };
 
 // 加载更多数据
-const loadMoreData = () => {
-  const startIndex = (currentPage.value - 1) * pageSize;
-  const endIndex = startIndex + pageSize;
-  const newItems = filteredHistory.value.slice(startIndex, endIndex);
-
-  if (newItems.length > 0) {
-    displayedHistory.value.push(...newItems);
-    currentPage.value++;
+const loadMoreData = async () => {
+  if (isLoadingMore.value || !hasMore.value) {
+    return;
   }
 
-  hasMore.value = endIndex < filteredHistory.value.length;
-  loading.value = false;
+  try {
+    isLoadingMore.value = true;
+    loading.value = true;
+
+    // 如果是搜索状态，使用搜索参数；否则使用原始参数
+    const params = searchParams.value || {
+      id: props.id,
+      name: props.name,
+      code: props.code,
+      pid: props.pid,
+      dir: props.dir,
+    };
+
+    await fetchHistoryPage(params, activeKey.value, currentPage.value);
+  } catch (error) {
+    console.error("加载更多数据失败:", error);
+    message.error("加载更多数据失败");
+  } finally {
+    isLoadingMore.value = false;
+    loading.value = false;
+  }
 };
 
 // 重置显示数据
-const resetDisplayedData = () => {
+const resetDisplayedData = async () => {
   displayedHistory.value = [];
+  historyList.value = [];
   currentPage.value = 1;
   hasMore.value = true;
-  loadMoreData();
+  isInitialLoad.value = true;
+
+  const params = searchParams.value || {
+    id: props.id,
+    name: props.name,
+    code: props.code,
+    pid: props.pid,
+    dir: props.dir,
+  };
+
+  try {
+    loading.value = true;
+    await fetchHistoryPage(params, activeKey.value, 1);
+  } catch (error) {
+    console.error("重置数据失败:", error);
+  } finally {
+    loading.value = false;
+  }
 };
 
-// 滚动处理
+// 滚动处理（添加节流）
 const handleScroll = () => {
-  if (!scrollContainer.value || loading.value || !hasMore.value) return;
+  if (
+    !scrollContainer.value ||
+    loading.value ||
+    !hasMore.value ||
+    isLoadingMore.value
+  ) {
+    return;
+  }
 
   const { scrollTop, scrollHeight, clientHeight } = scrollContainer.value;
 
   // 距离底部100px时开始加载
   if (scrollTop + clientHeight >= scrollHeight - 100) {
-    loading.value = true;
-    setTimeout(() => {
+    // 节流处理，避免重复触发
+    if (loadMoreTimeout) {
+      clearTimeout(loadMoreTimeout);
+    }
+
+    loadMoreTimeout = setTimeout(() => {
       loadMoreData();
-    }, 500); // 模拟加载延迟
+    }, 200); // 减少延迟提升响应性
   }
 };
 
 // 搜索处理
-const handleSearch = () => {
-  resetDisplayedData();
+const handleSearch = async () => {
+  if (!searchKeyword.value.trim()) {
+    // 清空搜索，恢复正常加载
+    searchParams.value = null;
+    await resetDisplayedData();
+    return;
+  }
+
+  // 设置搜索参数
+  searchParams.value = {
+    id: props.id,
+    name: props.name,
+    code: props.code,
+    pid: props.pid,
+    dir: props.dir,
+    search: searchKeyword.value.trim(),
+  };
+
+  await resetDisplayedData();
 };
 
 // 搜索输入处理（防抖）
@@ -389,7 +470,7 @@ const handleSearchInput = () => {
     clearTimeout(searchTimeout);
   }
   searchTimeout = setTimeout(() => {
-    resetDisplayedData();
+    handleSearch();
   }, 300);
 };
 
@@ -430,18 +511,36 @@ function handleQueryParamsChange(type = "api") {
   // }
 }
 
-// 查询历史记录
+// 查询历史记录（兼容原有调用）
 async function fetchHistory(apiParams, type) {
+  await fetchHistoryPage(apiParams, type, 1, true);
+}
+
+// 分页查询历史记录
+async function fetchHistoryPage(apiParams, type, page = 1, isReset = false) {
   try {
-    loading.value = true;
-    displayedHistory.value = [];
-    historyList.value = [];
+    // 如果是重置加载，清空现有数据
+    if (isReset || isInitialLoad.value) {
+      displayedHistory.value = [];
+      historyList.value = [];
+      isInitialLoad.value = false;
+      loadError.value = null; // 重置错误状态
+    }
+
     const filterObj = {
       project_id: apiParams?.pid,
       directory_id: apiParams?.dir,
       "project_object.tenant_id": getTenantId(),
       suffix: type,
     };
+
+    // 如果有搜索关键词，添加搜索条件
+    if (apiParams?.search) {
+      filterObj.$or = [
+        { name: { $like: `%${apiParams.search}%` } },
+        { "t1.content": { $like: `%${apiParams.search}%` } },
+      ];
+    }
 
     const joinObj = {
       leftJoin: {
@@ -465,7 +564,7 @@ async function fetchHistory(apiParams, type) {
     };
 
     const params = {
-      page: 1,
+      page: page,
       pagesize: pageSize || 10,
       filter: JSON.stringify(clearEmptyProperties(filterObj)),
       join: JSON.stringify(joinObj),
@@ -473,38 +572,83 @@ async function fetchHistory(apiParams, type) {
       sort: JSON.stringify({ "project_object.create_date": -1 }),
     };
 
-    const totalRes = await api.object.getListTotal(params);
-    if (totalRes?.status === 200) {
-      const _data = totalRes?.data?.data;
-      totalCount.value = _data?._size || 0;
+    // 只在第一页或重置时获取总数
+    if (page === 1 || isReset) {
+      try {
+        const totalRes = await api.object.getListTotal(params);
+        if (totalRes?.status === 200) {
+          const _data = totalRes?.data?.data;
+          totalCount.value = _data?._size || 0;
+        }
+      } catch (totalError) {
+        console.warn("获取总数失败:", totalError);
+        // 总数获取失败不影响数据加载
+      }
     }
 
     const res = await api.object.getList(params);
     if (res.status === 200 && res?.data?.data) {
-      res?.data?.data?.map((item) => {
-        let cont = null;
+      const newItems = [];
+
+      res?.data?.data?.forEach((item) => {
         if (item?.content) {
-          const jsonCont = JSON.parse(item.content);
-          cont =
-            type === "api"
-              ? jsonCont
-              : ApiDataConverter.connectorToApi(jsonCont, item?.create_date);
-          const historyItem = {
-            ...cont,
-            fid: item.id,
-            fname: item.name,
-            pid: item.project_id,
-            suffix: item.suffix,
-          };
-          displayedHistory.value.push(historyItem);
-          historyList.value.push(historyItem);
+          try {
+            const jsonCont = JSON.parse(item.content);
+            const cont =
+              type === "api"
+                ? jsonCont
+                : ApiDataConverter.connectorToApi(jsonCont, item?.create_date);
+
+            const historyItem = {
+              ...cont,
+              fid: item.id,
+              fname: item.name,
+              pid: item.project_id,
+              suffix: item.suffix,
+            };
+
+            newItems.push(historyItem);
+          } catch (parseError) {
+            console.warn("解析数据失败:", parseError, item);
+          }
         }
       });
+
+      // 添加新数据到列表
+      displayedHistory.value.push(...newItems);
+      historyList.value.push(...newItems);
+
+      // 更新分页状态
+      currentPage.value = page + 1;
+      hasMore.value = newItems.length === pageSize; // 如果返回数据少于pageSize，说明没有更多数据
+
+      // 成功加载，重置错误状态
+      loadError.value = null;
+      retryCount.value = 0;
+    } else {
+      // 没有数据或请求失败
+      hasMore.value = false;
     }
-    loading.value = false;
   } catch (error) {
-    loading.value = false;
     console.error("服务错误:", error.userMessage || error.message);
+    hasMore.value = false;
+
+    const errorMessage = error.userMessage || error.message || "未知错误";
+    loadError.value = errorMessage;
+
+    // 只有在首次加载失败时才显示错误消息
+    if (page === 1 || isReset) {
+      if (retryCount.value < maxRetries) {
+        retryCount.value++;
+        console.log(`加载失败，准备第${retryCount.value}次重试...`);
+        // 自动重试（延迟递增）
+        setTimeout(() => {
+          retryLoad();
+        }, 1000 * retryCount.value);
+      } else {
+        message.error("加载历史记录失败，请检查网络连接");
+      }
+    }
   }
 }
 
@@ -553,26 +697,33 @@ const deleteHistoryItem = (item) => {
     okText: "删除",
     cancelText: "取消",
     onOk: async () => {
-      const objectRes = await api.object.deleteObject(item.fid);
-      const objContRes = await api.objectCont.deleteObjectCont(item.fid);
-      if (objectRes.status === 200 && objContRes.status === 200) {
-        message.success("删除成功");
-      } else {
-        message.error("删除失败");
+      try {
+        const objectRes = await api.object.deleteObject(item.fid);
+        const objContRes = await api.objectCont.deleteObjectCont(item.fid);
+
+        if (objectRes.status === 200 && objContRes.status === 200) {
+          // 从当前显示列表中移除
+          const targetFid = item.fid;
+          historyList.value = historyList.value.filter(
+            (historyItem) => historyItem.fid !== targetFid
+          );
+          displayedHistory.value = displayedHistory.value.filter(
+            (historyItem) => historyItem.fid !== targetFid
+          );
+
+          // 更新总数
+          if (totalCount.value > 0) {
+            totalCount.value = totalCount.value - 1;
+          }
+
+          message.success("删除成功");
+        } else {
+          message.error("删除失败");
+        }
+      } catch (error) {
+        console.error("删除失败:", error);
+        message.error("删除失败，请重试");
       }
-      handleQueryParamsChange();
-      historyList.value = historyList.value.filter(
-        (item) => item.fid !== item.fid
-      );
-      displayedHistory.value = displayedHistory.value.filter(
-        (item) => item.fid !== item.fid
-      );
-      totalCount.value = totalCount.value - 1;
-      // localStorage.setItem(
-      //   "api_request_history",
-      //   JSON.stringify(historyList.value)
-      // );
-      // message.success("删除成功");
     },
   });
 };
@@ -584,28 +735,99 @@ const clearHistory = () => {
     content: "确定要清空所有历史记录吗？此操作不可恢复。",
     okText: "清空",
     cancelText: "取消",
-    onOk() {
-      historyList.value = [];
-      displayedHistory.value = [];
-      localStorage.removeItem("api_request_history");
-      message.success("历史记录已清空");
-      hasMore.value = false;
+    onOk: async () => {
+      try {
+        // 这里应该调用后台API批量删除历史记录
+        // 由于当前没有批量删除API，我们先清空前端数据
+        // 实际项目中建议添加批量删除API
+
+        historyList.value = [];
+        displayedHistory.value = [];
+        totalCount.value = 0;
+        hasMore.value = false;
+        loadError.value = null;
+        retryCount.value = 0;
+
+        // 如果有localStorage的兼容代码，也要清理
+        localStorage.removeItem("api_request_history");
+
+        message.success("历史记录已清空");
+
+        // 重新加载数据以确保状态同步
+        await nextTick();
+        handleQueryParamsChange(activeKey.value);
+      } catch (error) {
+        console.error("清空历史记录失败:", error);
+        message.error("清空失败，请重试");
+      }
     },
   });
 };
 
+// 节流函数
+const throttle = (func, wait) => {
+  let timeout;
+  let previous = 0;
+
+  return function executedFunction(...args) {
+    const now = Date.now();
+    const remaining = wait - (now - previous);
+
+    if (remaining <= 0 || remaining > wait) {
+      if (timeout) {
+        clearTimeout(timeout);
+        timeout = null;
+      }
+      previous = now;
+      func.apply(this, args);
+    } else if (!timeout) {
+      timeout = setTimeout(() => {
+        previous = Date.now();
+        timeout = null;
+        func.apply(this, args);
+      }, remaining);
+    }
+  };
+};
+
+// 节流后的滚动处理函数
+const throttledHandleScroll = throttle(handleScroll, 150);
+
 // 添加滚动事件监听
 const setupScrollListener = () => {
   if (scrollContainer.value) {
-    scrollContainer.value.addEventListener("scroll", handleScroll);
+    scrollContainer.value.addEventListener("scroll", throttledHandleScroll, {
+      passive: true,
+    });
   }
 };
 
 // 移除滚动事件监听
 const removeScrollListener = () => {
   if (scrollContainer.value) {
-    scrollContainer.value.removeEventListener("scroll", handleScroll);
+    scrollContainer.value.removeEventListener("scroll", throttledHandleScroll);
   }
+
+  // 清理所有定时器
+  if (loadMoreTimeout) {
+    clearTimeout(loadMoreTimeout);
+    loadMoreTimeout = null;
+  }
+};
+
+// 重试加载
+const retryLoad = async () => {
+  loadError.value = null;
+  await resetDisplayedData();
+};
+
+// 清空搜索
+const clearSearch = () => {
+  searchKeyword.value = "";
+  searchParams.value = null;
+  loadError.value = null;
+  retryCount.value = 0;
+  resetDisplayedData();
 };
 
 onMounted(() => {
@@ -831,6 +1053,15 @@ onUnmounted(() => {
   font-size: 14px;
 }
 
+/* 加载错误 */
+.load-error {
+  margin: 20px 0;
+}
+
+.load-error .ant-result {
+  padding: 20px;
+}
+
 /* 没有更多数据 */
 .no-more {
   margin: 40px 0 20px;
@@ -971,5 +1202,9 @@ onUnmounted(() => {
 
 [data-theme="dark"] .history-content::-webkit-scrollbar-thumb:hover {
   background: #595959;
+}
+
+[data-theme="dark"] .load-error .ant-result {
+  background: transparent;
 }
 </style>
