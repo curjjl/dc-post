@@ -47,7 +47,9 @@
           v-if="displayedHistory.length === 0 && !loading"
           class="empty-state"
         >
-          <a-empty :description="`暂无${activeKey === 'api' ? '历史记录' : '数据'}`">
+          <a-empty
+            :description="`暂无${activeKey === 'api' ? '历史记录' : '数据'}`"
+          >
             <template #image>
               <HistoryOutlined style="font-size: 48px; color: #d9d9d9" />
             </template>
@@ -324,7 +326,9 @@ const getEnabledParams = (params) => {
 
 // 获取启用的Headers
 const getEnabledHeaders = (headers) => {
-  return headers && Array.isArray(headers) ? headers?.filter((h) => h.enabled && h.key) : [];
+  return headers && Array.isArray(headers)
+    ? headers?.filter((h) => h.enabled && h.key)
+    : [];
 };
 
 // 加载历史记录
@@ -391,7 +395,7 @@ const handleSearchInput = () => {
 
 // 监听查询参数变化
 watch(
-  () => [props.id, props.name, props.code, props.pid, props.dir],
+  () => [props.pid, props.dir],
   (newParams) => {
     // console.log("History页面查询参数变化:", {
     //   id: newParams[0],
@@ -492,20 +496,13 @@ async function fetchHistory(apiParams, type) {
             pid: item.project_id,
             suffix: item.suffix,
           };
-          console.log("historyItem====", historyItem);
           displayedHistory.value.push(historyItem);
           historyList.value.push(historyItem);
         }
       });
-      // API转Connector
-      // const connectorData = ApiDataConverter.apiToConnector(apiContent);
-
-      // Connector转API
-      // const apiData = ApiDataConverter.connectorToApi(connectorContent);
     }
     loading.value = false;
   } catch (error) {
-    //  console.log("error:", error);
     loading.value = false;
     console.error("服务错误:", error.userMessage || error.message);
   }
@@ -513,19 +510,22 @@ async function fetchHistory(apiParams, type) {
 
 // 使用请求
 const useRequest = (item) => {
-  // 将请求数据存储到临时存储中，供工作台使用
-  sessionStorage.setItem("selected_request", JSON.stringify(item));
-  // 保持当前查询参数，跳转到工作台
-  const queryParams = {
-    id: props.id,
-    name: props.name,
-    code: props.code,
-    pid: props.pid,
-    dir: props.dir,
-  };
-  const routeObject = buildRouteObject("Workspace", queryParams);
-  router.push(routeObject);
-  message.success("已加载到工作台");
+  console.log("item====", item);
+  if (item) {
+    // 将请求数据存储到临时存储中，供工作台使用
+    // sessionStorage.setItem("selected_request", JSON.stringify(item));
+    // 保持当前查询参数，跳转到工作台
+    const queryParams = {
+      id: item.fid,
+      pid: props.pid,
+      dir: props.dir,
+      name: item.fname,
+      suffix: item.suffix,
+    };
+    const routeObject = buildRouteObject("Workspace", queryParams);
+    router.push(routeObject);
+    message.success("已加载到工作台");
+  }
 };
 
 // 返回工作台（保持查询参数）
