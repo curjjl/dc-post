@@ -128,7 +128,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, nextTick, onUnmounted } from "vue";
+import { ref, computed, watch, nextTick, onMounted, onUnmounted } from "vue";
 import {
   LoadingOutlined,
   CopyOutlined,
@@ -237,6 +237,13 @@ const extractCookieAttribute = (parts, attribute) => {
 const initBodyEditor = () => {
   if (!bodyEditorContainer.value || bodyEditor) return;
 
+  // 确保容器已经渲染到 DOM 中
+  if (!bodyEditorContainer.value.offsetParent && bodyEditorContainer.value.offsetWidth === 0) {
+    console.warn("Editor container not ready, retrying...");
+    setTimeout(initBodyEditor, 100);
+    return;
+  }
+
   try {
     const language = detectLanguage(responseBodyText.value);
 
@@ -264,6 +271,13 @@ const initBodyEditor = () => {
         enable: false,
       },
     });
+
+    // 监听编辑器创建后的布局调整
+    setTimeout(() => {
+      if (bodyEditor) {
+        bodyEditor.layout();
+      }
+    }, 100);
   } catch (error) {
     console.error("Failed to create Monaco editor:", error);
     // 如果Monaco编辑器创建失败，回退到原始文本显示
@@ -304,9 +318,10 @@ const copyResponse = async () => {
 // 监听视图模式变化
 watch(bodyViewMode, (newMode) => {
   if (newMode === "formatted") {
-    nextTick(() => {
+    // 确保编辑器容器已准备好再初始化
+    setTimeout(() => {
       initBodyEditor();
-    });
+    }, 100);
   } else {
     destroyBodyEditor();
   }
@@ -315,16 +330,53 @@ watch(bodyViewMode, (newMode) => {
 // 监听响应变化
 watch(
   () => props.response,
-  (newResponse) => {
+  (newResponse, oldResponse) => {
+    // 确保有响应数据且在格式化模式下才初始化编辑器
     if (newResponse && bodyViewMode.value === "formatted") {
-      destroyBodyEditor();
-      nextTick(() => {
-        initBodyEditor();
-      });
+      // 如果响应数据发生变化，重新初始化编辑器
+      if (!oldResponse || newResponse !== oldResponse) {
+        destroyBodyEditor();
+        // 使用 setTimeout 替代 nextTick，确保 DOM 更新完成
+        setTimeout(() => {
+          initBodyEditor();
+        }, 50);
+      } else if (bodyEditor) {
+        // 如果编辑器已存在，只更新内容
+        const newContent = responseBodyText.value;
+        const currentContent = bodyEditor.getValue();
+        if (newContent !== currentContent) {
+          bodyEditor.setValue(newContent);
+          bodyEditor.layout();
+        }
+      }
     }
   },
-  { deep: true }
+  { deep: true, immediate: false }
 );
+
+// 监听响应体文本变化
+watch(
+  () => responseBodyText.value,
+  (newText) => {
+    if (bodyEditor && bodyViewMode.value === "formatted") {
+      const currentContent = bodyEditor.getValue();
+      if (newText !== currentContent) {
+        bodyEditor.setValue(newText);
+        bodyEditor.layout();
+      }
+    }
+  }
+);
+
+// 组件挂载时初始化
+onMounted(() => {
+  // 如果有响应数据且处于格式化模式，初始化编辑器
+  if (props.response && bodyViewMode.value === "formatted") {
+    setTimeout(() => {
+      initBodyEditor();
+    }, 150);
+  }
+});
 
 onUnmounted(() => {
   destroyBodyEditor();

@@ -119,7 +119,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, onUnmounted } from "vue";
+import { ref, computed, watch, onMounted, onUnmounted, nextTick } from "vue";
 import { useRouter } from "vue-router";
 import {
   HistoryOutlined,
@@ -247,10 +247,13 @@ const handleSendRequest = async (requestData) => {
   try {
     // 使用HTTP服务发送请求
     const response = await httpService.sendRequest(requestData);
+    
+    // 先设置响应数据，确保 UI 立即更新
     currentResponse.value = response;
 
     // console.log("response====", response);
 
+    // 异步保存操作，不阻塞响应渲染
     const respContent = {
       ...requestData,
       status: response.status,
@@ -259,6 +262,29 @@ const handleSendRequest = async (requestData) => {
       responseSize: response.size,
     };
 
+    // 在下一个微任务中执行保存操作，避免阻塞响应渲染
+    nextTick(() => {
+      saveRequestToServer(respContent);
+    });
+
+  } catch (error) {
+    console.error("请求失败:", error);
+    currentResponse.value = {
+      status: 0,
+      statusText: "Error",
+      headers: {},
+      data: { error: error.message },
+      duration: 0,
+      size: "0 B",
+    };
+  } finally {
+    requestLoading.value = false;
+  }
+};
+
+// 异步保存请求到服务器
+const saveRequestToServer = async (respContent) => {
+  try {
     // console.log("respContent====", respContent);
     // 保存请求数据到对象表
     const objId = nanoid();
@@ -266,7 +292,7 @@ const handleSendRequest = async (requestData) => {
       id: objId,
       code: `${objId}_api`,
       name: `${
-        requestData?.name || props.name || dayjs().format("YYYY-MM-DD HH:mm:ss")
+        respContent?.name || props.name || dayjs().format("YYYY-MM-DD HH:mm:ss")
       }`,
       type: "api",
       order: 0,
@@ -294,36 +320,28 @@ const handleSendRequest = async (requestData) => {
     const res = await saveObject(objectParam, contParam);
     if (res) {
       // 保存成功之后，更新路由信息
-      routerParams.updateQuery(
-        {
-          id: objId,
-          name: objectParam.name,
-          pid: objectParam.project_id,
-          suffix: objectParam.suffix,
-          dir: objectParam.directory_id,
-        },
-        {
-          replace: true,
-          encode: false,
-        }
-      );
+      // 使用 setTimeout 确保在响应渲染完成后再更新路由
+      setTimeout(() => {
+        routerParams.updateQuery(
+          {
+            id: objId,
+            name: objectParam.name,
+            pid: objectParam.project_id,
+            suffix: objectParam.suffix,
+            dir: objectParam.directory_id,
+          },
+          {
+            replace: true,
+            encode: false,
+          }
+        );
+      }, 100); // 延迟 100ms 确保响应面板已完成初始化渲染
     } else {
       message.error("保存失败");
     }
-
-    // refreshFlag.value++;
   } catch (error) {
-    console.error("请求失败:", error);
-    currentResponse.value = {
-      status: 0,
-      statusText: "Error",
-      headers: {},
-      data: { error: error.message },
-      duration: 0,
-      size: "0 B",
-    };
-  } finally {
-    requestLoading.value = false;
+    console.error("保存请求失败:", error);
+    message.error("保存失败");
   }
 };
 
