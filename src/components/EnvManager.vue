@@ -509,43 +509,66 @@ onMounted(() => {
 }
 
 /* 深色主题样式 */
-[data-theme="dark"] .env-selector {
+[data-theme="dark"] .env-manager .env-selector {
   border-bottom: 1px solid #303030;
 }
 
-[data-theme="dark"] .preview-section {
+[data-theme="dark"] .env-manager .section-header h4 {
+  color: #fff;
+}
+
+[data-theme="dark"] .env-manager .preview-section {
   background: #1f1f1f;
+  border: 1px solid #434343;
 }
 
-[data-theme="dark"] .preview-section h4 {
+[data-theme="dark"] .env-manager .preview-section h4 {
   color: #fff;
 }
 
-[data-theme="dark"] .example-label {
-  color: #fff;
+[data-theme="dark"] .env-manager .example-label {
+  color: #d9d9d9;
+  font-weight: 500;
 }
 
-[data-theme="dark"] .example-item code {
+[data-theme="dark"] .env-manager .example-item code {
   background: #262626;
   color: #fff;
+  border: 1px solid #434343;
 }
 
-[data-theme="dark"] .actions {
+[data-theme="dark"] .env-manager .actions {
   border-top: 1px solid #303030;
 }
 
-[data-theme="dark"] :deep(.ant-input) {
+[data-theme="dark"] .env-manager :deep(.ant-input) {
   background: #1f1f1f;
   border-color: #434343;
   color: #fff;
 }
 
-[data-theme="dark"] :deep(.ant-input:hover) {
+[data-theme="dark"] .env-manager :deep(.ant-input:hover) {
   border-color: #177ddc;
 }
 
-[data-theme="dark"] :deep(.ant-input:focus) {
+[data-theme="dark"] .env-manager :deep(.ant-input:focus) {
   border-color: #177ddc;
   box-shadow: 0 0 0 2px rgba(23, 125, 220, 0.2);
+}
+
+[data-theme="dark"] .env-manager :deep(.ant-table-thead > tr > th) {
+  background: #262626;
+  color: #d9d9d9;
+  border-bottom: 1px solid #434343;
+}
+
+[data-theme="dark"] .env-manager :deep(.ant-table-tbody > tr > td) {
+  background: #1f1f1f;
+  color: #d9d9d9;
+  border-bottom: 1px solid #303030;
+}
+
+[data-theme="dark"] .env-manager :deep(.ant-table-tbody > tr:hover > td) {
+  background: #262626;
 }
 </style>

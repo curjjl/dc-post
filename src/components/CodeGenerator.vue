@@ -553,40 +553,59 @@ onMounted(() => {
 }
 
 /* 深色主题样式 */
-[data-theme="dark"] .language-selector {
+[data-theme="dark"] .code-generator .language-selector {
   border-bottom: 1px solid #303030;
 }
 
-[data-theme="dark"] .code-title {
+[data-theme="dark"] .code-generator .code-title {
   color: #fff;
 }
 
-[data-theme="dark"] .code-container {
+[data-theme="dark"] .code-generator .code-container {
   border-color: #434343;
   background: #1f1f1f;
 }
 
-[data-theme="dark"] .code-container pre {
+[data-theme="dark"] .code-generator .code-container pre {
   color: #fff;
 }
 
-[data-theme="dark"] .options-section {
+[data-theme="dark"] .code-generator .options-section {
   background: #1f1f1f;
+  border: 1px solid #434343;
 }
 
-[data-theme="dark"] .actions {
+[data-theme="dark"] .code-generator .actions {
   border-top: 1px solid #303030;
 }
 
-[data-theme="dark"] .code-container::-webkit-scrollbar-track {
+[data-theme="dark"] .code-generator .code-container::-webkit-scrollbar-track {
   background: #262626;
 }
 
-[data-theme="dark"] .code-container::-webkit-scrollbar-thumb {
+[data-theme="dark"] .code-generator .code-container::-webkit-scrollbar-thumb {
   background: #434343;
 }
 
-[data-theme="dark"] .code-container::-webkit-scrollbar-thumb:hover {
+[data-theme="dark"] .code-generator .code-container::-webkit-scrollbar-thumb:hover {
   background: #595959;
+}
+
+[data-theme="dark"] .code-generator .options-section :deep(.ant-checkbox-wrapper) {
+  color: #d9d9d9;
+}
+
+[data-theme="dark"] .code-generator .options-section :deep(.ant-checkbox-wrapper:hover) {
+  color: #fff;
+}
+
+[data-theme="dark"] .code-generator .options-section :deep(.ant-checkbox-wrapper .ant-checkbox-checked .ant-checkbox-inner) {
+  background-color: #177ddc;
+  border-color: #177ddc;
+}
+
+[data-theme="dark"] .code-generator .options-section :deep(.ant-checkbox-wrapper .ant-checkbox-inner) {
+  background-color: #1f1f1f;
+  border-color: #434343;
 }
 </style>

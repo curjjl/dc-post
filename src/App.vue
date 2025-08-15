@@ -21,6 +21,8 @@ provide('isDarkTheme', isDarkMode)
 const toggleTheme = () => {
   isDarkMode.value = !isDarkMode.value
   localStorage.setItem('theme', isDarkMode.value ? 'dark' : 'light')
+  // 同步设置body的主题属性，确保Modal等渲染到body的组件也能获取主题
+  document.body.setAttribute('data-theme', isDarkMode.value ? 'dark' : 'light')
 }
 
 // 初始化主题
@@ -28,6 +30,8 @@ const savedTheme = localStorage.getItem('theme')
 if (savedTheme) {
   isDarkMode.value = savedTheme === 'dark'
 }
+// 初始化时设置body的主题属性
+document.body.setAttribute('data-theme', isDarkMode.value ? 'dark' : 'light')
 
 // 初始化Monaco Editor
 initializeMonaco()
