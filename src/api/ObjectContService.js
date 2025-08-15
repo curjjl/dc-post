@@ -22,7 +22,7 @@ export class ObjectContService extends BaseApiService {
   async getList(params = {}) {
     return this.paginate('', {
       page: 1,
-      pagesize: 20,
+      pagesize: 10,
       ...params
     })
   }
@@ -41,7 +41,7 @@ export class ObjectContService extends BaseApiService {
    * @param {Object} objData - 参数
    * @returns {Promise} 创建结果响应
    */
-  async upsertObject(objData) {
+  async upsertObjContent(objData) {
     return this.post('?wm=upsert&pk=object_id', objData)
   }
 
@@ -67,11 +67,11 @@ export class ObjectContService extends BaseApiService {
 
   /**
    * 删除用户
-   * @param {string|number} userId - 用户ID
+   * @param {string|number} objId - 对象ID
    * @returns {Promise} 删除结果响应
    */
-  async deleteUser(userId) {
-    return this.delete('/:id', { id: userId })
+  async deleteObjectCont(objId) {
+    return this.delete('/:id?pk=object_id', { id: objId })
   }
 
   /**

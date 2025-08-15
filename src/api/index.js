@@ -11,7 +11,8 @@ import { RetryStrategy } from '../services/ErrorHandler.js'
 // 导入具体的API服务
 import { userService } from './UserService.js'
 import { authService } from './AuthService.js'
-import { commonService } from './CommonService.js'
+import { objectService } from './ObjectService.js'
+import { objectContService } from './ObjectContService.js'
 
 /**
  * API配置
@@ -170,7 +171,8 @@ export const apiFactory = new ApiServiceFactory()
 // 注册默认服务
 apiFactory.registerService('user', userService)
 apiFactory.registerService('auth', authService)
-apiFactory.registerService('common', commonService)
+apiFactory.registerService('object', objectService)
+apiFactory.registerService('objectCont', objectContService)
 
 /**
  * 全局API配置方法
@@ -248,7 +250,8 @@ export const api = {
   // 具体业务服务
   user: userService,
   auth: authService,
-  common: commonService,
+  object: objectService,
+  objectCont: objectContService,
   
   // 工厂方法
   factory: apiFactory,

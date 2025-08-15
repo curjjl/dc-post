@@ -75,5 +75,6 @@ export function buildApiQueryParams(queryParams) {
  * @returns {boolean} 是否有有效参数
  */
 export function hasValidQueryParams(queryParams) {
-  return !!(queryParams.id || queryParams.name || queryParams.code || queryParams.pid || queryParams.dir)
+  // return !!(queryParams.id || queryParams.name || queryParams.code || queryParams.pid || queryParams.dir)
+  return !!(queryParams.pid)
 }

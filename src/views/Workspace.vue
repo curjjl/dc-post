@@ -54,6 +54,12 @@
         </div>
         <HistoryPanel
           v-if="!historyCollapsed"
+          :id="id"
+          :name="name"
+          :pid="pid"
+          :dir="dir"
+          :code="code"
+          :refreshFlag="refreshFlag"
           @select-request="handleSelectRequest"
         />
       </a-layout-sider>
@@ -65,6 +71,7 @@
           <RequestConfig
             ref="requestConfigRef"
             @send-request="handleSendRequest"
+            @hand-save="handleOnSave"
           />
         </div>
       </a-layout-content>
@@ -131,6 +138,13 @@ import {
   buildApiQueryParams,
   hasValidQueryParams,
 } from "@/utils/routeParamsHelper.js";
+import { clearEmptyProperties, getUserId, getTenantId } from "@/utils/tools.js";
+import api from "@/api/index.js";
+import { message } from "ant-design-vue";
+import { nanoid } from "nanoid";
+import dayjs from "dayjs";
+import { useRouterParams } from "@/utils/routerUtils";
+import ApiDataConverter from "@/utils/dataConversionTools.js";
 
 // 定义查询参数 props
 const props = defineProps({
@@ -154,9 +168,14 @@ const props = defineProps({
     type: String,
     default: null,
   },
+  suffix: {
+    type: String,
+    default: null,
+  },
 });
 
 const router = useRouter();
+const routerParams = useRouterParams();
 
 // 面板折叠状态
 const historyCollapsed = ref(false);
@@ -181,6 +200,7 @@ const currentRequestData = ref({});
 // 对话框状态
 const showEnvManager = ref(false);
 const showCodeGenerator = ref(false);
+const refreshFlag = ref(0);
 
 // 主题状态
 const isDarkMode = ref(false);
@@ -225,14 +245,74 @@ const handleSendRequest = async (requestData) => {
   currentRequestData.value = requestData; // 保存当前请求数据
 
   try {
-    console.log("发送请求:", requestData);
-
     // 使用HTTP服务发送请求
     const response = await httpService.sendRequest(requestData);
     currentResponse.value = response;
 
-    // 更新历史记录中的响应信息
-    updateHistoryWithResponse(requestData.id, response);
+    console.log("response====", response);
+
+    const respContent = {
+      ...requestData,
+      status: response.status,
+      statusText: response.statusText,
+      duration: response.duration,
+      responseSize: response.size,
+    };
+
+    console.log("respContent====", respContent);
+    // 保存请求数据到对象表
+    const objId = nanoid();
+    const objectParam = {
+      id: objId,
+      code: `${objId}_api`,
+      name: `${
+        requestData?.name || props.name || dayjs().format("YYYY-MM-DD HH:mm:ss")
+      }`,
+      type: "api",
+      order: 0,
+      readonly: null,
+      project_id: props?.pid,
+      project_name: props?.pname || null,
+      directory_id: props?.dir || null,
+      suffix: "api",
+      editor_url:
+        "/access-view/dc-post/workspace?id={{id}}&name={{name}}&pid={{project_id}}&type={{type}}&suffix={{suffix}}&dir={{directory_id}}",
+      notes: null,
+      creator: getUserId(),
+      modifier: getUserId(),
+      tenant_id: getTenantId(),
+    };
+
+    // 保存响应内容到对象内容表
+    const contParam = {
+      object_id: objId,
+      content: JSON.stringify(respContent),
+      content_type: "text/plain",
+      tenant_id: getTenantId(),
+    };
+
+    const res = await saveObject(objectParam, contParam);
+    if (res) {
+      // 保存成功之后，更新路由信息
+      routerParams.updateQuery(
+        {
+          id: objId,
+          name: objectParam.name,
+          pid: objectParam.project_id,
+          suffix: objectParam.suffix,
+          dir: objectParam.directory_id,
+        },
+        {
+          replace: true,
+          encode: false,
+        }
+      );
+
+    } else {
+      message.error("保存失败");
+    }
+
+    // refreshFlag.value++;
   } catch (error) {
     console.error("请求失败:", error);
     currentResponse.value = {
@@ -248,73 +328,150 @@ const handleSendRequest = async (requestData) => {
   }
 };
 
-// 更新历史记录中的响应信息
-const updateHistoryWithResponse = (requestId, response) => {
-  const history = JSON.parse(
-    localStorage.getItem("api_request_history") || "[]"
-  );
-  const index = history.findIndex((item) => item.id === requestId);
-
-  if (index !== -1) {
-    history[index] = {
-      ...history[index],
-      status: response.status,
-      statusText: response.statusText,
-      duration: response.duration,
-      responseSize: response.size,
-    };
-    localStorage.setItem("api_request_history", JSON.stringify(history));
-  }
+// 保存对象和对象内容
+const saveObject = async (objectParam, contParam) => {
+  const objRes = await api.object.upsertObject(objectParam);
+  const objContRes = await api.objectCont.upsertObjContent(contParam);
+  return objRes?.data?.code === 200 && objContRes?.data?.code === 200;
 };
+
 
 // 处理选择历史请求
 const handleSelectRequest = (requestData) => {
+  // console.log("handleSelectRequest====", requestData);
   if (requestConfigRef.value) {
     requestConfigRef.value.loadRequest(requestData);
+    routerParams.updateQuery(
+      {
+        id: requestData.fid,
+        name: requestData.name,
+        pid: requestData.pid,
+        suffix: requestData.suffix,
+      },
+      {
+        replace: true,
+        encode: false,
+      }
+    );
   }
 };
 
-// 监听查询参数变化
-watch(
-  () => [props.id, props.name, props.code, props.pid, props.dir],
-  (newParams) => {
-    console.log("查询参数变化:", {
-      id: newParams[0],
-      name: newParams[1],
-      code: newParams[2],
-      pid: newParams[3],
-      dir: newParams[4],
-    });
-    // 这里可以根据参数变化执行相应的逻辑
-    handleQueryParamsChange();
-  },
-  { immediate: true }
-);
+// 保存连接器
+const handleSaveConnector = async (requestData) => {
+  console.log("Connector====", requestData);
+  if (props.pid) {
+    const _id = nanoid();
+    // 更新对象
+    const objectParam = {
+      id: _id,
+      code: 'restClient',
+      name: `${
+        requestData?.name || props.name || dayjs().format("YYYY-MM-DD HH:mm:ss")
+      }`,
+      type: "ctr",
+      order: 0,
+      readonly: null,
+      project_id: props?.pid,
+      project_name: props?.pname || null,
+      directory_id: props?.dir || null,
+      suffix: "connector",
+      editor_url:
+        "/access-view/dc-post/workspace?id={{id}}&name={{name}}&pid={{project_id}}&type={{type}}&suffix={{suffix}}&dir={{directory_id}}",
+      notes: '连接器',
+      creator: getUserId(),
+      modifier: getUserId(),
+      tenant_id: getTenantId(),
+    };
+    // API转Connector
+    const connectorData = ApiDataConverter.apiToConnector(requestData);
+    console.log("connectorData====", connectorData);
+    // 更新对象内容
+    const contParam = {
+      object_id: _id,
+      content: JSON.stringify(connectorData),
+      content_type: "text/plain",
+      tenant_id: getTenantId(),
+    };
+    const objRes = await api.object.upsertObject(objectParam);
+    const objContRes = await api.objectCont.upsertObjContent(contParam);
+    if (objRes?.data?.code === 200 && objContRes?.data?.code === 200) {
+      message.success("连接器保存成功，请刷新当前目录查看！");
+    } else {
+      message.error("保存失败");
+    }
+  }
+};
 
-// 处理查询参数变化
-function handleQueryParamsChange() {
-  // 可以在这里根据查询参数执行查询后台服务等操作
-  const queryParams = {
-    id: props.id,
-    name: props.name,
-    code: props.code,
-    pid: props.pid,
-    dir: props.dir,
+// 保存更新API
+const handleSaveApi = async (requestData) => {
+  // console.log("保存更新API====", requestData);
+  if (props.pid && props.id) {
+    const _id = props.id;
+    // 更新对象
+    const objectParam = {
+      id: _id,
+      code: `${_id}_api`,
+      name: `${
+        requestData?.name || props.name || dayjs().format("YYYY-MM-DD HH:mm:ss")
+      }`,
+      type: "api",
+      order: 0,
+      readonly: null,
+      project_id: props?.pid,
+      project_name: props?.pname || null,
+      directory_id: props?.dir || null,
+      suffix: "api",
+      editor_url:
+        "/access-view/dc-post/workspace?id={{id}}&name={{name}}&pid={{project_id}}&type={{type}}&suffix={{suffix}}&dir={{directory_id}}",
+      notes: 'API',
+      creator: getUserId(),
+      modifier: getUserId(),
+      tenant_id: getTenantId(),
+    };
+
+    // 更新对象内容
+    const contParam = {
+      object_id: _id,
+      content: JSON.stringify(requestData),
+      content_type: "text/plain",
+      tenant_id: getTenantId(),
+    };
+    const objRes = await api.object.upsertObject(objectParam);
+    const objContRes = await api.objectCont.upsertObjContent(contParam);
+    if (objRes?.data?.code === 200 && objContRes?.data?.code === 200) {
+      message.success("保存成功");
+    } else {
+      message.error("保存失败");
+    }
+  }
+};
+
+// 处理保存请求数据
+const handleOnSave = (type) => {
+  if (
+    !currentRequestData.value ||
+    Object.keys(currentRequestData.value).length === 0
+  ) {
+    return message.error("请先发送请求");
+  }
+
+  const respContent = {
+    ...currentRequestData.value,
+    status: currentResponse.value.status,
+    statusText: currentResponse.value.statusText,
+    duration: currentResponse.value.duration,
+    responseSize: currentResponse.value.size,
   };
 
-  if (hasValidQueryParams(queryParams)) {
-    console.log("当前查询参数:", queryParams);
-
-    // 构建API查询参数
-    const apiParams = buildApiQueryParams(queryParams);
-    console.log("API查询参数:", apiParams);
-
-    // TODO: 根据参数查询后台服务
-    // 例如：await fetchDataFromBackend(apiParams)
+  if (type === "api") {
+    handleSaveApi(respContent);
+  } else if (type === "ctr") {
+    handleSaveConnector(respContent);
   }
-}
+};
 
-// 跳转到历史记录页面（保持查询参数）
+
+// 跳转到历史记录页面
 const goToHistory = () => {
   const queryParams = {
     id: props.id,

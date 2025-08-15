@@ -133,6 +133,8 @@
     <a-modal
       v-model:open="showCreateEnv"
       title="创建新环境"
+      ok-text="确定"
+      cancel-text="取消"
       @ok="createEnvironment"
       @cancel="showCreateEnv = false"
     >
@@ -151,6 +153,8 @@
     <a-modal
       v-model:open="showImport"
       title="导入环境变量"
+      ok-text="确定"
+      cancel-text="取消"
       @ok="handleImport"
       @cancel="showImport = false"
     >

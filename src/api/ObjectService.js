@@ -1,10 +1,10 @@
 import { BaseApiService } from '../services/BaseApiService.js'
 
 /**
- * 通用相关API服务
+ * Object相关API服务
  * 继承BaseApiService，提供通用管理相关的接口
  */
-export class CommonService extends BaseApiService {
+export class ObjectService extends BaseApiService {
   constructor(baseURL = '/api/ds/code_bricks/project_object') {
     super(baseURL, {
       timeout: 10000,
@@ -16,13 +16,13 @@ export class CommonService extends BaseApiService {
    * 获取用户列表
    * @param {Object} params - 查询参数
    * @param {number} params.page - 页码
-   * @param {number} params.pageSize - 每页数量
+   * @param {number} params.pagesize - 每页数量
    * @returns {Promise} 列表响应
    */
   async getList(params = {}) {
     return this.paginate('', {
       page: 1,
-      pagesize: 20,
+      pagesize: 10,
       ...params
     })
   }
@@ -37,12 +37,12 @@ export class CommonService extends BaseApiService {
   }
 
   /**
-   * 创建新用户
-   * @param {Object} objData - 用户数据
+   * 创建/更新
+   * @param {Object} objData - 参数数据
    * @returns {Promise} 创建结果响应
    */
-  async createObject(objData) {
-    return this.post('', objData)
+  async upsertObject(objData) {
+    return this.post('?wm=upsert&pk=id', objData)
   }
 
   /**
@@ -67,11 +67,11 @@ export class CommonService extends BaseApiService {
 
   /**
    * 删除用户
-   * @param {string|number} userId - 用户ID
+   * @param {string|number} objId - 对象ID
    * @returns {Promise} 删除结果响应
    */
-  async deleteUser(userId) {
-    return this.delete('/:id', { id: userId })
+  async deleteObject(objId) {
+    return this.delete('/:id?pk=id', { id: objId })
   }
 
   /**
@@ -202,7 +202,7 @@ export class CommonService extends BaseApiService {
 }
 
 // 创建默认用户服务实例
-export const commonService = new CommonService()
+export const objectService = new ObjectService()
 
 // 导出默认实例
-export default commonService
+export default objectService

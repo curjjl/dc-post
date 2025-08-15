@@ -1,47 +1,51 @@
-import { createRouter, createWebHistory } from 'vue-router'
-import Workspace from '@/views/Workspace.vue'
-import History from '@/views/History.vue'
+import { createRouter, createWebHistory } from "vue-router";
+import Workspace from "@/views/Workspace.vue";
+import History from "@/views/History.vue";
 
 const routes = [
   {
-    path: '/',
-    redirect: '/workspace'
+    path: "/",
+    redirect: "/workspace",
   },
   {
-    path: '/workspace',
-    name: 'Workspace',
+    path: "/workspace",
+    name: "Workspace",
     component: Workspace,
-    props: route => ({
+    props: (route) => ({
+      pid: route.query.pid,
       id: route.query.id,
+      dir: route.query.dir,
+      suffix: route.query.suffix,
       name: route.query.name,
       code: route.query.code,
-      pid: route.query.pid,
-      dir: route.query.dir
-    })
+      pname: route.query.pname,
+    }),
   },
   {
-    path: '/history',
-    name: 'History',
+    path: "/history",
+    name: "History",
     component: History,
-    props: route => ({
+    props: (route) => ({
+      pid: route.query.pid,
       id: route.query.id,
+      dir: route.query.dir,
+      suffix: route.query.suffix,
       name: route.query.name,
       code: route.query.code,
-      pid: route.query.pid,
-      dir: route.query.dir
-    })
-  }
-]
+      pname: route.query.pname,
+    }),
+  },
+];
 
 const router = createRouter({
   history: createWebHistory(),
-  routes
-})
+  routes,
+});
 
 // 路由守卫 - 保存未完成请求
 router.beforeEach((to, from, next) => {
   // 这里可以添加保存当前请求状态的逻辑
-  next()
-})
+  next();
+});
 
-export default router
+export default router;

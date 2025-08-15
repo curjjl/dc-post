@@ -77,7 +77,9 @@
                   <strong>{{ record.key }}</strong>
                 </template>
                 <template v-else-if="column.key === 'value'">
-                  <code class="header-value" :title="record.value">{{ record.value }}</code>
+                  <code class="header-value" :title="record.value">{{
+                    record.value
+                  }}</code>
                 </template>
               </template>
             </a-table>
@@ -428,6 +430,7 @@ onUnmounted(() => {
 
 .body-editor-container {
   height: 100%;
+  height: 500px;
 }
 
 .response-headers {

@@ -2,15 +2,29 @@
   <div class="request-config">
     <!-- 请求基本配置 -->
     <a-card class="config-card">
-      <template #title>
-        <a-flex justify="space-between" gap="small">
-          <a href="javascript:void(0)">{{ route.query.name || "请求配置" }}</a>
-          <a-button type="default">保存</a-button>
-        </a-flex>
-      </template>
       <a-form :model="requestForm" layout="vertical">
-        <!-- 请求方法和URL -->
+        <!-- API别名、请求方法和URL -->
         <a-row :gutter="16">
+          <a-col :span="20">
+            <a-form-item label="">
+              <a-input v-model:value="requestForm.name" class="request-name" />
+            </a-form-item>
+          </a-col>
+          <a-col :span="4" style="text-align: right">
+            <a-form-item>
+              <a-dropdown>
+                <template #overlay>
+                  <a-menu @click="handleMenuClick">
+                    <a-menu-item key="ctr">另存为连接器</a-menu-item>
+                  </a-menu>
+                </template>
+                <a-button @click="onSave('api')">
+                  保存
+                  <DownOutlined />
+                </a-button>
+              </a-dropdown>
+            </a-form-item>
+          </a-col>
           <a-col :span="4">
             <a-form-item label="方法">
               <a-select v-model:value="requestForm.method" size="large">
@@ -54,7 +68,7 @@
 
     <!-- 参数配置标签页 -->
     <a-card class="params-card">
-      <a-tabs v-model:activeKey="activeTab">
+      <a-tabs v-model:activeKey="activeTab" class="params-tabs">
         <!-- Query参数 -->
         <a-tab-pane key="query" tab="Query参数">
           <ParamsTable
@@ -95,13 +109,15 @@ import AuthConfig from "./AuthConfig.vue";
 import BodyEditor from "./BodyEditor.vue";
 import { processEnvironmentVariables } from "@/utils/envUtils.js";
 import { useRoute } from "vue-router";
+import { DownOutlined } from "@ant-design/icons-vue";
 
 const route = useRoute();
 
-const emit = defineEmits(["send-request"]);
+const emit = defineEmits(["send-request", "hand-save"]);
 
 // 表单数据
 const requestForm = ref({
+  name: route.query.name || "请求名称",
   method: "GET",
   url: "",
   queryParams: [{ key: "", value: "", enabled: true }],
@@ -125,6 +141,8 @@ const requestForm = ref({
 
 const activeTab = ref("query");
 const loading = ref(false);
+const saveLoading = ref(false);
+const ctrLoading = ref(false);
 
 // URL显示状态（包含查询参数的完整URL）
 const displayUrl = ref("");
@@ -321,11 +339,7 @@ const sendRequest = () => {
     timestamp: Date.now(),
     id: Date.now().toString(),
   };
-
-  console.log("发送请求:", requestData);
-
-  // 保存到历史记录
-  saveToHistory(requestData);
+  console.log("发送请求====", requestData);
 
   emit("send-request", requestData);
 
@@ -334,20 +348,29 @@ const sendRequest = () => {
   }, 100);
 };
 
-// 保存到历史记录
-const saveToHistory = (requestData) => {
-  const history = JSON.parse(
-    localStorage.getItem("api_request_history") || "[]"
-  );
-  history.push(requestData);
-
-  // 限制历史记录数量
-  if (history.length > 100) {
-    history.shift();
-  }
-
-  localStorage.setItem("api_request_history", JSON.stringify(history));
+const handleMenuClick = (e) => {
+  emit("hand-save", e?.key);
 };
+
+const onSave = (type) => {
+  emit("hand-save", type);
+};
+
+// 保存到历史记录
+// const saveHistory = (requestData) => {
+//   console.log("保存到历史记录========", requestData)
+//   const history = JSON.parse(
+//     localStorage.getItem("api_request_history") || "[]"
+//   );
+//   history.push(requestData);
+
+//   // 限制历史记录数量
+//   if (history.length > 100) {
+//     history.shift();
+//   }
+
+//   localStorage.setItem("api_request_history", JSON.stringify(history));
+// };
 
 // 加载请求数据（从历史记录或其他来源）
 const loadRequest = (requestData) => {
@@ -413,6 +436,28 @@ defineExpose({
 
 .params-card {
   flex: 1;
+}
+
+.request-name {
+  font-weight: bold;
+  font-size: 18px;
+  color: #555;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  transition: border-bottom-color 0.2s;
+  box-shadow: none;
+  outline: none;
+  &:hover {
+    border-bottom: solid 1px rgba(0, 0, 0, 0.2);
+  }
+}
+
+.request-name:focus {
+  border: none;
+  border-bottom: 2px solid #177ddc;
+  outline: none;
+  box-shadow: none;
 }
 
 .params-card :deep(.ant-card-body) {

@@ -1,6 +1,5 @@
 <template>
   <div class="history-page">
-    <!-- 固定头部 -->
     <div class="header">
       <div class="header-content">
         <a-button type="text" @click="goBackToWorkspace" class="back-btn">
@@ -39,8 +38,8 @@
       <div class="history-list">
         <!-- 历史记录项 -->
         <a-tabs v-model:activeKey="activeKey" @change="handleQueryParamsChange">
-          <a-tab-pane key="tempDebug" tab="请求历史"> </a-tab-pane>
-          <a-tab-pane key="debug" tab="已保存"></a-tab-pane>
+          <a-tab-pane key="api" tab="请求历史"> </a-tab-pane>
+          <!-- <a-tab-pane key="debug" tab="已保存"></a-tab-pane> -->
           <a-tab-pane key="connector" tab="连接器"></a-tab-pane>
         </a-tabs>
         <!-- 空状态 -->
@@ -48,7 +47,7 @@
           v-if="displayedHistory.length === 0 && !loading"
           class="empty-state"
         >
-          <a-empty description="暂无历史记录">
+          <a-empty :description="`暂无${activeKey === 'api' ? '历史记录' : '数据'}`">
             <template #image>
               <HistoryOutlined style="font-size: 48px; color: #d9d9d9" />
             </template>
@@ -59,7 +58,7 @@
         </div>
         <div
           v-for="item in displayedHistory"
-          :key="item.id"
+          :key="item.fid || item.id"
           class="history-item"
         >
           <div class="item-header">
@@ -78,7 +77,7 @@
                 type="text"
                 size="small"
                 danger
-                @click="deleteHistoryItem(item.id)"
+                @click="deleteHistoryItem(item)"
               >
                 <template #icon><DeleteOutlined /></template>
               </a-button>
@@ -157,7 +156,7 @@
         <!-- 没有更多数据提示 -->
         <div v-if="!hasMore && displayedHistory.length > 0" class="no-more">
           <a-divider>
-            <span style="color: #999; font-size: 12px">已显示全部历史记录</span>
+            <span style="color: #999; font-size: 12px">已全部加载</span>
           </a-divider>
         </div>
       </div>
@@ -183,6 +182,7 @@ import {
 } from "@/utils/routeParamsHelper.js";
 import api from "../api/index.js"; // 导入API服务
 import { clearEmptyProperties, getTenantId } from "@/utils/tools.js";
+import ApiDataConverter from "@/utils/dataConversionTools.js";
 
 // 定义查询参数 props
 const props = defineProps({
@@ -202,6 +202,10 @@ const props = defineProps({
     type: String,
     default: null,
   },
+  suffix: {
+    type: String,
+    default: null,
+  },
   dir: {
     type: String,
     default: null,
@@ -210,7 +214,7 @@ const props = defineProps({
 
 const router = useRouter();
 
-const activeKey = ref("connector");
+const activeKey = ref("api");
 
 // 数据状态
 const historyList = ref([]);
@@ -320,18 +324,17 @@ const getEnabledParams = (params) => {
 
 // 获取启用的Headers
 const getEnabledHeaders = (headers) => {
-  return headers ? headers.filter((h) => h.enabled && h.key) : [];
+  return headers && Array.isArray(headers) ? headers?.filter((h) => h.enabled && h.key) : [];
 };
-
 
 // 加载历史记录
-const loadHistory = () => {
-  const saved = localStorage.getItem("api_request_history");
-  if (saved) {
-    historyList.value = JSON.parse(saved).reverse(); // 最新的在前面
-    loadMoreData();
-  }
-};
+// const loadHistory = () => {
+//   const saved = localStorage.getItem("api_request_history");
+//   if (saved) {
+//     historyList.value = JSON.parse(saved).reverse(); // 最新的在前面
+//     loadMoreData();
+//   }
+// };
 
 // 加载更多数据
 const loadMoreData = () => {
@@ -390,13 +393,13 @@ const handleSearchInput = () => {
 watch(
   () => [props.id, props.name, props.code, props.pid, props.dir],
   (newParams) => {
-    console.log("History页面查询参数变化:", {
-      id: newParams[0],
-      name: newParams[1],
-      code: newParams[2],
-      pid: newParams[3],
-      dir: newParams[4],
-    });
+    // console.log("History页面查询参数变化:", {
+    //   id: newParams[0],
+    //   name: newParams[1],
+    //   code: newParams[2],
+    //   pid: newParams[3],
+    //   dir: newParams[4],
+    // });
     // 这里可以根据参数变化执行相应的逻辑
     handleQueryParamsChange(activeKey.value);
   },
@@ -404,7 +407,7 @@ watch(
 );
 
 // 处理查询参数变化
-function handleQueryParamsChange(type = "tempDebug") {
+function handleQueryParamsChange(type = "api") {
   // 可以在这里根据查询参数执行查询后台服务等操作
   const queryParams = {
     id: props.id,
@@ -414,26 +417,26 @@ function handleQueryParamsChange(type = "tempDebug") {
     dir: props.dir,
   };
 
-  if (hasValidQueryParams(queryParams)) {
-    // console.log("History页面当前查询参数:", queryParams);
+  fetchHistory(queryParams, type);
 
-    // 构建API查询参数
-    const apiParams = buildApiQueryParams(queryParams);
-    // console.log("History页面API查询参数:", apiParams);
-    fetchHistory(apiParams, type);
-  }
+  // if (hasValidQueryParams(queryParams)) {
+  //   // 构建API查询参数
+  //   const apiParams = buildApiQueryParams(queryParams);
+  //   fetchHistory(apiParams, type);
+  // }
 }
 
 // 查询历史记录
 async function fetchHistory(apiParams, type) {
   try {
     loading.value = true;
+    displayedHistory.value = [];
+    historyList.value = [];
     const filterObj = {
       project_id: apiParams?.pid,
       directory_id: apiParams?.dir,
       "project_object.tenant_id": getTenantId(),
-      suffix: type
-      // suffix: { $in: ["debug", "tempDebug", "connector"] },
+      suffix: type,
     };
 
     const joinObj = {
@@ -450,43 +453,59 @@ async function fetchHistory(apiParams, type) {
     const keyObj = {
       name: 1,
       id: 1,
-      content: 1,
+      project_id: 1,
       suffix: 1,
+      "t1.content": 1,
       "project_object.create_date": 1,
       "project_object.last_modified": 1,
     };
 
     const params = {
       page: 1,
-      pagesize: 20,
+      pagesize: pageSize || 10,
       filter: JSON.stringify(clearEmptyProperties(filterObj)),
       join: JSON.stringify(joinObj),
       keys: JSON.stringify(keyObj),
       sort: JSON.stringify({ "project_object.create_date": -1 }),
     };
 
-    const totalRes = await api.common.getListTotal(params);
-    console.log("总数:", totalRes);
+    const totalRes = await api.object.getListTotal(params);
     if (totalRes?.status === 200) {
       const _data = totalRes?.data?.data;
       totalCount.value = _data?._size || 0;
     }
 
-    const res = await api.common.getList(params);
-    if(res.status === 200){
-        const resData = res?.data?.data?.map(item => {
-          return {
-            id: item.id,
-            name: item.name,
-            content: item.content ? JSON.parse(item.content) : item.content,
+    const res = await api.object.getList(params);
+    if (res.status === 200 && res?.data?.data) {
+      res?.data?.data?.map((item) => {
+        let cont = null;
+        if (item?.content) {
+          const jsonCont = JSON.parse(item.content);
+          cont =
+            type === "api"
+              ? jsonCont
+              : ApiDataConverter.connectorToApi(jsonCont, item?.create_date);
+          const historyItem = {
+            ...cont,
+            fid: item.id,
+            fname: item.name,
+            pid: item.project_id,
             suffix: item.suffix,
-            create_date: item.create_date,
           };
-        });
-        console.log("列表:", resData);
+          console.log("historyItem====", historyItem);
+          displayedHistory.value.push(historyItem);
+          historyList.value.push(historyItem);
+        }
+      });
+      // API转Connector
+      // const connectorData = ApiDataConverter.apiToConnector(apiContent);
+
+      // Connector转API
+      // const apiData = ApiDataConverter.connectorToApi(connectorContent);
     }
     loading.value = false;
   } catch (error) {
+    //  console.log("error:", error);
     loading.value = false;
     console.error("服务错误:", error.userMessage || error.message);
   }
@@ -517,28 +536,43 @@ const goBackToWorkspace = () => {
     code: props.code,
     pid: props.pid,
     dir: props.dir,
+    suffix: props.suffix,
   };
   const routeObject = buildRouteObject("Workspace", queryParams);
   router.push(routeObject);
 };
 
 // 删除单个历史记录
-const deleteHistoryItem = (id) => {
+const deleteHistoryItem = (item) => {
+  if (!item || !item.fid) {
+    return message.error("请求数据异常");
+  }
   Modal.confirm({
     title: "确认删除",
     content: "确定要删除这条历史记录吗？",
     okText: "删除",
     cancelText: "取消",
-    onOk() {
-      historyList.value = historyList.value.filter((item) => item.id !== id);
+    onOk: async () => {
+      const objectRes = await api.object.deleteObject(item.fid);
+      const objContRes = await api.objectCont.deleteObjectCont(item.fid);
+      if (objectRes.status === 200 && objContRes.status === 200) {
+        message.success("删除成功");
+      } else {
+        message.error("删除失败");
+      }
+      handleQueryParamsChange();
+      historyList.value = historyList.value.filter(
+        (item) => item.fid !== item.fid
+      );
       displayedHistory.value = displayedHistory.value.filter(
-        (item) => item.id !== id
+        (item) => item.fid !== item.fid
       );
-      localStorage.setItem(
-        "api_request_history",
-        JSON.stringify(historyList.value)
-      );
-      message.success("删除成功");
+      totalCount.value = totalCount.value - 1;
+      // localStorage.setItem(
+      //   "api_request_history",
+      //   JSON.stringify(historyList.value)
+      // );
+      // message.success("删除成功");
     },
   });
 };
@@ -575,7 +609,7 @@ const removeScrollListener = () => {
 };
 
 onMounted(() => {
-  loadHistory();
+  // loadHistory();
   nextTick(() => {
     setupScrollListener();
   });
