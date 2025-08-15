@@ -249,7 +249,7 @@ const handleSendRequest = async (requestData) => {
     const response = await httpService.sendRequest(requestData);
     currentResponse.value = response;
 
-    console.log("response====", response);
+    // console.log("response====", response);
 
     const respContent = {
       ...requestData,
@@ -259,7 +259,7 @@ const handleSendRequest = async (requestData) => {
       responseSize: response.size,
     };
 
-    console.log("respContent====", respContent);
+    // console.log("respContent====", respContent);
     // 保存请求数据到对象表
     const objId = nanoid();
     const objectParam = {
@@ -307,7 +307,6 @@ const handleSendRequest = async (requestData) => {
           encode: false,
         }
       );
-
     } else {
       message.error("保存失败");
     }
@@ -335,7 +334,6 @@ const saveObject = async (objectParam, contParam) => {
   return objRes?.data?.code === 200 && objContRes?.data?.code === 200;
 };
 
-
 // 处理选择历史请求
 const handleSelectRequest = (requestData) => {
   // console.log("handleSelectRequest====", requestData);
@@ -358,13 +356,13 @@ const handleSelectRequest = (requestData) => {
 
 // 保存连接器
 const handleSaveConnector = async (requestData) => {
-  console.log("Connector====", requestData);
+  // console.log("Connector====", requestData);
   if (props.pid) {
     const _id = nanoid();
     // 更新对象
     const objectParam = {
       id: _id,
-      code: 'restClient',
+      code: "restClient",
       name: `${
         requestData?.name || props.name || dayjs().format("YYYY-MM-DD HH:mm:ss")
       }`,
@@ -377,7 +375,7 @@ const handleSaveConnector = async (requestData) => {
       suffix: "connector",
       editor_url:
         "/access-view/dc-post/workspace?id={{id}}&name={{name}}&pid={{project_id}}&type={{type}}&suffix={{suffix}}&dir={{directory_id}}",
-      notes: '连接器',
+      notes: "连接器",
       creator: getUserId(),
       modifier: getUserId(),
       tenant_id: getTenantId(),
@@ -423,7 +421,7 @@ const handleSaveApi = async (requestData) => {
       suffix: "api",
       editor_url:
         "/access-view/dc-post/workspace?id={{id}}&name={{name}}&pid={{project_id}}&type={{type}}&suffix={{suffix}}&dir={{directory_id}}",
-      notes: 'API',
+      notes: "API",
       creator: getUserId(),
       modifier: getUserId(),
       tenant_id: getTenantId(),
@@ -470,7 +468,6 @@ const handleOnSave = (type) => {
   }
 };
 
-
 // 跳转到历史记录页面
 const goToHistory = () => {
   const queryParams = {
@@ -483,6 +480,51 @@ const goToHistory = () => {
   const routeObject = buildRouteObject("History", queryParams);
   router.push(routeObject);
 };
+
+// 监听查询参数变化
+watch(
+  () => [props.id, props.pid, props.dir],
+  (newParams) => {
+    // console.log("查询参数变化:", {
+    //   id: newParams[0],
+    //   name: newParams[1],
+    //   code: newParams[2],
+    //   pid: newParams[3],
+    //   dir: newParams[4],
+    //   refreshFlag: newParams[5],
+    // });
+    fetchHistoryDetail(newParams[0]);
+  },
+  { immediate: true }
+);
+
+// 查询当前调试记录详情并回显
+async function fetchHistoryDetail(id) {
+  if (!id) {
+    return;
+  }
+  const res = await api.objectCont.getObjectInfo(id);
+  if (res.status === 200 && res?.data?.data) {
+    const cont = res?.data?.data?.content;
+    if (cont) {
+      const jsonCont =
+        props.suffix === "api"
+          ? JSON.parse(cont)
+          : ApiDataConverter.connectorToApi(
+              JSON.parse(cont),
+              res?.data?.data?.create_date
+            );
+      const apiItem = {
+        ...jsonCont,
+        fid: props.id || res?.data?.data?.object_id,
+        fname: props.name,
+        pid: props.pid,
+        suffix: props.suffix,
+      };
+      requestConfigRef.value.loadRequest(apiItem);
+    }
+  }
+}
 
 // 节流函数
 const throttle = (func, limit) => {

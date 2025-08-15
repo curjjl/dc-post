@@ -272,7 +272,7 @@ const deleteRequest = (item) => {
   });
 };
 
-// 清空所有历史
+// 清空所有历史 -- 删除当前pid下的所有后缀为api的文件
 const clearAllHistory = () => {
   Modal.confirm({
     title: "确认清空",
@@ -337,7 +337,7 @@ function handleQueryParamsChange(type = "api") {
   }
 }
 
-// 查询历史记录
+// 查询历史记录列表
 async function fetchHistory(apiParams, type) {
   try {
     loading.value = true;
@@ -419,6 +419,7 @@ async function fetchHistory(apiParams, type) {
     console.error("服务错误:", error.userMessage || error.message);
   }
 }
+
 
 onMounted(() => {
   // loadHistory();

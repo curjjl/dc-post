@@ -46,13 +46,23 @@ export class ObjectContService extends BaseApiService {
   }
 
   /**
-   * 更新用户信息
-   * @param {string|number} userId - 用户ID
-   * @param {Object} userData - 更新的用户数据
+   * 更新对象内容
+   * @param {string|number} objId - 对象ID
+   * @param {Object} objData - 更新的对象数据
    * @returns {Promise} 更新结果响应
    */
   async updateObject(objId, objData) {
     return this.put('/:id', objData, { id: objId })
+  }
+
+  /**
+   * 更新对象内容
+   * @param {string|number} objId - 对象ID
+   * @param {Object} objData - 更新的对象数据
+   * @returns {Promise} 更新结果响应
+   */
+  async getObjectInfo(objId) {
+    return this.get('/:id?pk=object_id', { id: objId })
   }
 
   /**

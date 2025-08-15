@@ -95,9 +95,9 @@ const createAxiosInstance = (baseConfig = {}) => {
         cached: false,
       };
 
-      console.log(
-        `[HTTP] ${response.status} ${duration}ms [${config.metadata.requestId}]`
-      );
+      // console.log(
+      //   `[HTTP] ${response.status} ${duration}ms [${config.metadata.requestId}]`
+      // );
       return response;
     },
     async (error) => {
