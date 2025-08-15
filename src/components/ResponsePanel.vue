@@ -128,7 +128,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, nextTick, onMounted, onUnmounted } from "vue";
+import { ref, computed, watch, nextTick, onMounted, onUnmounted, inject } from "vue";
 import {
   LoadingOutlined,
   CopyOutlined,
@@ -136,6 +136,12 @@ import {
 } from "@ant-design/icons-vue";
 import { message } from "ant-design-vue";
 import * as monaco from "monaco-editor";
+import { 
+  initializeMonaco, 
+  getReadonlyEditorOptions, 
+  detectLanguage, 
+  getThemeForMode 
+} from "@/utils/monaco-config";
 
 const props = defineProps({
   response: {
@@ -153,6 +159,11 @@ const bodyViewMode = ref("formatted");
 const responseBodyContainer = ref(null);
 const bodyEditorContainer = ref(null);
 let bodyEditor = null;
+let editorInitPromise = null;
+let isDestroyed = ref(false);
+
+// 尝试注入主题状态，如果没有则使用默认值
+const isDarkTheme = inject('isDarkTheme', ref(false));
 
 // 响应体文本
 const responseBodyText = computed(() => {
@@ -234,74 +245,98 @@ const extractCookieAttribute = (parts, attribute) => {
 };
 
 // 初始化响应体编辑器
-const initBodyEditor = () => {
-  if (!bodyEditorContainer.value || bodyEditor) return;
-
-  // 确保容器已经渲染到 DOM 中
-  if (!bodyEditorContainer.value.offsetParent && bodyEditorContainer.value.offsetWidth === 0) {
-    console.warn("Editor container not ready, retrying...");
-    setTimeout(initBodyEditor, 100);
+const initBodyEditor = async () => {
+  if (isDestroyed.value || bodyEditor || !bodyEditorContainer.value) {
     return;
   }
 
-  try {
-    const language = detectLanguage(responseBodyText.value);
+  // 防止重复初始化
+  if (editorInitPromise) {
+    return editorInitPromise;
+  }
 
-    bodyEditor = monaco.editor.create(bodyEditorContainer.value, {
-      value: responseBodyText.value,
-      language,
-      theme: "vs",
-      readOnly: true,
-      automaticLayout: true,
-      minimap: { enabled: false },
-      scrollBeyondLastLine: false,
-      fontSize: 12,
-      lineNumbers: "on",
-      wordWrap: "on",
-      // 禁用一些可能导致Worker问题的功能
-      quickSuggestions: false,
-      parameterHints: { enabled: false },
-      suggestOnTriggerCharacters: false,
-      acceptSuggestionOnEnter: "off",
-      tabCompletion: "off",
-      wordBasedSuggestions: false,
-      // 禁用语法检查相关功能
-      validate: false,
-      lint: {
-        enable: false,
-      },
-    });
+  editorInitPromise = new Promise(async (resolve, reject) => {
+    try {
+      // 确保Monaco环境已初始化
+      initializeMonaco();
 
-    // 监听编辑器创建后的布局调整
-    setTimeout(() => {
-      if (bodyEditor) {
-        bodyEditor.layout();
+      // 等待容器准备就绪
+      const maxRetries = 20;
+      let retries = 0;
+      
+      while (!isEditorContainerReady() && retries < maxRetries) {
+        await new Promise(resolve => setTimeout(resolve, 50));
+        retries++;
       }
-    }, 100);
-  } catch (error) {
-    console.error("Failed to create Monaco editor:", error);
-    // 如果Monaco编辑器创建失败，回退到原始文本显示
-    bodyViewMode.value = "raw";
-  }
+
+      if (!isEditorContainerReady()) {
+        throw new Error('Editor container not ready after retries');
+      }
+
+      if (isDestroyed.value) {
+        resolve();
+        return;
+      }
+
+      const content = responseBodyText.value;
+      const language = detectLanguage(content);
+      const theme = getThemeForMode(isDarkTheme.value);
+
+      // 获取只读编辑器配置
+      const editorOptions = {
+        ...getReadonlyEditorOptions(),
+        value: content,
+        language,
+        theme,
+      };
+
+      bodyEditor = monaco.editor.create(bodyEditorContainer.value, editorOptions);
+
+      // 确保编辑器布局正确
+      setTimeout(() => {
+        if (bodyEditor && !isDestroyed.value) {
+          bodyEditor.layout();
+        }
+      }, 100);
+
+      resolve();
+    } catch (error) {
+      console.error("Failed to create Monaco editor:", error);
+      // 如果Monaco编辑器创建失败，回退到原始文本显示
+      bodyViewMode.value = "raw";
+      reject(error);
+    } finally {
+      editorInitPromise = null;
+    }
+  });
+
+  return editorInitPromise;
 };
 
-// 检测语言类型
-const detectLanguage = (content) => {
-  try {
-    JSON.parse(content);
-    return "json";
-  } catch {
-    if (content.includes("<?xml")) return "xml";
-    if (content.includes("<html")) return "html";
-    return "text";
-  }
+// 检查编辑器容器是否准备就绪
+const isEditorContainerReady = () => {
+  if (!bodyEditorContainer.value) return false;
+  
+  // 检查元素是否在DOM中且可见
+  const rect = bodyEditorContainer.value.getBoundingClientRect();
+  return rect.width > 0 && rect.height > 0;
 };
 
-// 销毁编辑器
+// 安全销毁编辑器
 const destroyBodyEditor = () => {
   if (bodyEditor) {
-    bodyEditor.dispose();
-    bodyEditor = null;
+    try {
+      bodyEditor.dispose();
+    } catch (error) {
+      console.warn('Error disposing Monaco editor:', error);
+    } finally {
+      bodyEditor = null;
+    }
+  }
+  
+  // 清理初始化Promise
+  if (editorInitPromise) {
+    editorInitPromise = null;
   }
 };
 
@@ -316,12 +351,14 @@ const copyResponse = async () => {
 };
 
 // 监听视图模式变化
-watch(bodyViewMode, (newMode) => {
-  if (newMode === "formatted") {
-    // 确保编辑器容器已准备好再初始化
-    setTimeout(() => {
-      initBodyEditor();
-    }, 100);
+watch(bodyViewMode, async (newMode) => {
+  if (newMode === "formatted" && !isDestroyed.value) {
+    try {
+      await nextTick(); // 等待DOM更新
+      await initBodyEditor();
+    } catch (error) {
+      console.error('Failed to initialize editor on mode change:', error);
+    }
   } else {
     destroyBodyEditor();
   }
@@ -330,23 +367,34 @@ watch(bodyViewMode, (newMode) => {
 // 监听响应变化
 watch(
   () => props.response,
-  (newResponse, oldResponse) => {
+  async (newResponse, oldResponse) => {
+    if (isDestroyed.value) return;
+    
     // 确保有响应数据且在格式化模式下才初始化编辑器
     if (newResponse && bodyViewMode.value === "formatted") {
       // 如果响应数据发生变化，重新初始化编辑器
       if (!oldResponse || newResponse !== oldResponse) {
         destroyBodyEditor();
-        // 使用 setTimeout 替代 nextTick，确保 DOM 更新完成
-        setTimeout(() => {
-          initBodyEditor();
-        }, 50);
-      } else if (bodyEditor) {
+        try {
+          await nextTick(); // 等待DOM更新
+          await initBodyEditor();
+        } catch (error) {
+          console.error('Failed to initialize editor on response change:', error);
+        }
+      } else if (bodyEditor && !isDestroyed.value) {
         // 如果编辑器已存在，只更新内容
-        const newContent = responseBodyText.value;
-        const currentContent = bodyEditor.getValue();
-        if (newContent !== currentContent) {
-          bodyEditor.setValue(newContent);
-          bodyEditor.layout();
+        try {
+          const newContent = responseBodyText.value;
+          const currentContent = bodyEditor.getValue();
+          if (newContent !== currentContent) {
+            bodyEditor.setValue(newContent);
+            bodyEditor.layout();
+          }
+        } catch (error) {
+          console.error('Failed to update editor content:', error);
+          // 如果更新失败，重新初始化编辑器
+          destroyBodyEditor();
+          await initBodyEditor();
         }
       }
     }
@@ -354,31 +402,38 @@ watch(
   { deep: true, immediate: false }
 );
 
-// 监听响应体文本变化
+// 监听主题变化
 watch(
-  () => responseBodyText.value,
-  (newText) => {
-    if (bodyEditor && bodyViewMode.value === "formatted") {
-      const currentContent = bodyEditor.getValue();
-      if (newText !== currentContent) {
-        bodyEditor.setValue(newText);
-        bodyEditor.layout();
+  isDarkTheme,
+  (isDark) => {
+    if (bodyEditor && !isDestroyed.value) {
+      try {
+        const theme = getThemeForMode(isDark);
+        monaco.editor.setTheme(theme);
+      } catch (error) {
+        console.warn('Failed to update Monaco theme:', error);
       }
     }
   }
 );
 
 // 组件挂载时初始化
-onMounted(() => {
+onMounted(async () => {
+  isDestroyed.value = false;
+  
   // 如果有响应数据且处于格式化模式，初始化编辑器
   if (props.response && bodyViewMode.value === "formatted") {
-    setTimeout(() => {
-      initBodyEditor();
-    }, 150);
+    try {
+      await nextTick(); // 等待DOM完全挂载
+      await initBodyEditor();
+    } catch (error) {
+      console.error('Failed to initialize editor on mount:', error);
+    }
   }
 });
 
 onUnmounted(() => {
+  isDestroyed.value = true;
   destroyBodyEditor();
 });
 </script>

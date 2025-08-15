@@ -7,11 +7,15 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, provide } from 'vue'
 import { theme } from 'ant-design-vue'
+import { initializeMonaco } from '@/utils/monaco-config'
 
 // 主题切换状态
 const isDarkMode = ref(false)
+
+// 提供主题状态给子组件
+provide('isDarkTheme', isDarkMode)
 
 // 提供全局主题切换方法
 const toggleTheme = () => {
@@ -24,6 +28,9 @@ const savedTheme = localStorage.getItem('theme')
 if (savedTheme) {
   isDarkMode.value = savedTheme === 'dark'
 }
+
+// 初始化Monaco Editor
+initializeMonaco()
 
 // 将主题切换方法暴露给全局
 window.toggleTheme = toggleTheme

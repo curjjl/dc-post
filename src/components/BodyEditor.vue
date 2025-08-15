@@ -60,12 +60,17 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
+import { ref, onMounted, onUnmounted, watch, nextTick, inject } from 'vue'
 import { FormatPainterOutlined } from '@ant-design/icons-vue'
 import { message } from 'ant-design-vue'
 import * as monaco from 'monaco-editor'
 import ParamsTable from './ParamsTable.vue'
 import FormDataTable from './FormDataTable.vue'
+import { 
+  initializeMonaco, 
+  getDefaultEditorOptions, 
+  getThemeForMode 
+} from '@/utils/monaco-config'
 
 const props = defineProps({
   body: {
@@ -84,101 +89,155 @@ const emit = defineEmits(['update:body'])
 const editorContainer = ref(null)
 const rawLanguage = ref('json')
 let editor = null
+let editorInitPromise = null
+const isDestroyed = ref(false)
+
+// 尝试注入主题状态，如果没有则使用默认值
+const isDarkTheme = inject('isDarkTheme', ref(false))
 
 // 更新body字段
-const updateBodyField = (field, value) => {
+const updateBodyField = async (field, value) => {
   const newBody = { ...props.body, [field]: value }
   emit('update:body', newBody)
 
   if (field === 'type') {
-    if (value === 'raw') {
-      nextTick(() => {
-        initEditor()
-      })
+    if (value === 'raw' && !isDestroyed.value) {
+      try {
+        await nextTick()
+        await initEditor()
+      } catch (error) {
+        console.error('Failed to initialize editor on type change:', error)
+      }
     } else {
       destroyEditor()
     }
   }
 }
 
-// 处理类型变更
-const handleTypeChange = () => {
-  updateBody()
-  if (props.body.type === 'raw') {
-    nextTick(() => {
-      initEditor()
-    })
-  } else {
-    destroyEditor()
+// 处理类型变更（已移除，逻辑合并到updateBodyField中）
+
+// 处理语言变更
+const handleLanguageChange = (newLanguage) => {
+  rawLanguage.value = newLanguage
+  if (editor && !isDestroyed.value) {
+    try {
+      const model = editor.getModel()
+      monaco.editor.setModelLanguage(model, newLanguage)
+    } catch (error) {
+      console.warn('Failed to change editor language:', error)
+    }
   }
 }
 
-// 处理语言变更
-const handleLanguageChange = () => {
-  if (editor) {
-    const model = editor.getModel()
-    monaco.editor.setModelLanguage(model, rawLanguage.value)
-  }
+// 检查编辑器容器是否准备就绪
+const isEditorContainerReady = () => {
+  if (!editorContainer.value) return false
+  
+  const rect = editorContainer.value.getBoundingClientRect()
+  return rect.width > 0 && rect.height > 0
 }
 
 // 初始化Monaco编辑器
-const initEditor = () => {
-  if (!editorContainer.value || editor) return
-
-  try {
-    editor = monaco.editor.create(editorContainer.value, {
-      value: props.body.raw || '',
-      language: rawLanguage.value,
-      theme: 'vs',
-      automaticLayout: true,
-      minimap: { enabled: false },
-      scrollBeyondLastLine: false,
-      fontSize: 14,
-      lineNumbers: 'on',
-      roundedSelection: false,
-      scrollbar: {
-        vertical: 'auto',
-        horizontal: 'auto'
-      },
-      wordWrap: 'on',
-      formatOnPaste: true,
-      formatOnType: true,
-      // 禁用一些可能导致Worker问题的功能
-      quickSuggestions: false,
-      parameterHints: { enabled: false },
-      suggestOnTriggerCharacters: false,
-      acceptSuggestionOnEnter: 'off',
-      tabCompletion: 'off',
-      wordBasedSuggestions: false,
-      // 禁用语法检查相关功能
-      validate: false,
-      lint: {
-        enable: false
-      }
-    })
-
-    // 监听内容变化
-    editor.onDidChangeModelContent(() => {
-      const value = editor.getValue()
-      props.body.raw = value
-      updateBody()
-    })
-  } catch (error) {
-    console.error('Failed to create Monaco editor:', error)
+const initEditor = async () => {
+  if (isDestroyed.value || editor || !editorContainer.value) {
+    return
   }
+
+  // 防止重复初始化
+  if (editorInitPromise) {
+    return editorInitPromise
+  }
+
+  editorInitPromise = new Promise(async (resolve, reject) => {
+    try {
+      // 确保Monaco环境已初始化
+      initializeMonaco()
+
+      // 等待容器准备就绪
+      const maxRetries = 20
+      let retries = 0
+      
+      while (!isEditorContainerReady() && retries < maxRetries) {
+        await new Promise(resolve => setTimeout(resolve, 50))
+        retries++
+      }
+
+      if (!isEditorContainerReady()) {
+        throw new Error('Editor container not ready after retries')
+      }
+
+      if (isDestroyed.value) {
+        resolve()
+        return
+      }
+
+      const theme = getThemeForMode(isDarkTheme.value)
+      
+      // 获取默认编辑器配置
+      const editorOptions = {
+        ...getDefaultEditorOptions(),
+        value: props.body.raw || '',
+        language: rawLanguage.value,
+        theme
+      }
+
+      editor = monaco.editor.create(editorContainer.value, editorOptions)
+
+      // 监听内容变化
+      editor.onDidChangeModelContent(() => {
+        if (isDestroyed.value) return
+        
+        try {
+          const value = editor.getValue()
+          if (props.body.raw !== value) {
+            props.body.raw = value
+            updateBody()
+          }
+        } catch (error) {
+          console.warn('Error handling content change:', error)
+        }
+      })
+
+      // 确保编辑器布局正确
+      setTimeout(() => {
+        if (editor && !isDestroyed.value) {
+          editor.layout()
+        }
+      }, 100)
+
+      resolve()
+    } catch (error) {
+      console.error('Failed to create Monaco editor:', error)
+      reject(error)
+    } finally {
+      editorInitPromise = null
+    }
+  })
+
+  return editorInitPromise
 }
 
-// 销毁编辑器
+// 安全销毁编辑器
 const destroyEditor = () => {
   if (editor) {
-    editor.dispose()
-    editor = null
+    try {
+      editor.dispose()
+    } catch (error) {
+      console.warn('Error disposing Monaco editor:', error)
+    } finally {
+      editor = null
+    }
+  }
+  
+  // 清理初始化Promise
+  if (editorInitPromise) {
+    editorInitPromise = null
   }
 }
 
 // 格式化JSON
 const formatJson = () => {
-  if (!editor) return
+  if (!editor || isDestroyed.value) return
 
   try {
     const value = editor.getValue()
@@ -198,22 +257,47 @@ const updateBody = () => {
   emit('update:body', props.body)
 }
 
-// 监听body变化
+// 监听body内容变化
 watch(() => props.body.raw, (newValue) => {
-  if (editor && editor.getValue() !== newValue) {
-    editor.setValue(newValue || '')
+  if (editor && !isDestroyed.value && editor.getValue() !== newValue) {
+    try {
+      editor.setValue(newValue || '')
+    } catch (error) {
+      console.warn('Failed to update editor value:', error)
+    }
   }
 })
 
-onMounted(() => {
+// 监听主题变化
+watch(
+  isDarkTheme,
+  (isDark) => {
+    if (editor && !isDestroyed.value) {
+      try {
+        const theme = getThemeForMode(isDark)
+        monaco.editor.setTheme(theme)
+      } catch (error) {
+        console.warn('Failed to update Monaco theme:', error)
+      }
+    }
+  }
+)
+
+onMounted(async () => {
+  isDestroyed.value = false
+  
   if (props.body.type === 'raw') {
-    nextTick(() => {
-      initEditor()
-    })
+    try {
+      await nextTick()
+      await initEditor()
+    } catch (error) {
+      console.error('Failed to initialize editor on mount:', error)
+    }
   }
 })
 
 onUnmounted(() => {
+  isDestroyed.value = true
   destroyEditor()
 })
 </script>
