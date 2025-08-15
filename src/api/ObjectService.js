@@ -8,7 +8,7 @@ export class ObjectService extends BaseApiService {
   constructor(baseURL = '/api/ds/code_bricks/project_object') {
     super(baseURL, {
       timeout: 10000,
-      cacheTime: 2 * 60 * 1000 // 用户数据缓存2分钟
+      cacheTime: 0 // 禁用缓存，确保数据实时性
     })
   }
 

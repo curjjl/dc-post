@@ -230,6 +230,42 @@ const hasValidRequest = computed(() => {
   return currentRequestData.value.url && currentRequestData.value.method;
 });
 
+// 防抖计时器，避免频繁刷新
+let refreshDebounceTimer = null;
+
+// 清除API缓存
+const clearApiCaches = () => {
+  try {
+    // 清除所有API服务的缓存
+    if (api.clearCaches && typeof api.clearCaches === 'function') {
+      api.clearCaches();
+    }
+    console.log('[Cache] 已清除API缓存');
+  } catch (error) {
+    console.warn('[Cache] 清除缓存失败:', error);
+  }
+};
+
+// 刷新历史面板
+const refreshHistoryPanel = () => {
+  // 清除之前的防抖计时器
+  if (refreshDebounceTimer) {
+    clearTimeout(refreshDebounceTimer);
+  }
+  
+  // 使用防抖机制，避免短时间内多次刷新
+  refreshDebounceTimer = setTimeout(() => {
+    // 使用 nextTick 确保在下个更新周期触发刷新，提供更好的性能
+    nextTick(() => {
+      try {
+        refreshFlag.value += 1;
+      } catch (error) {
+        console.warn('刷新历史面板失败:', error);
+      }
+    });
+  }, 100);
+};
+
 // 主题切换
 const toggleTheme = () => {
   if (window.toggleTheme) {
@@ -250,8 +286,6 @@ const handleSendRequest = async (requestData) => {
     
     // 先设置响应数据，确保 UI 立即更新
     currentResponse.value = response;
-
-    // console.log("response====", response);
 
     // 异步保存操作，不阻塞响应渲染
     const respContent = {
@@ -285,7 +319,6 @@ const handleSendRequest = async (requestData) => {
 // 异步保存请求到服务器
 const saveRequestToServer = async (respContent) => {
   try {
-    // console.log("respContent====", respContent);
     // 保存请求数据到对象表
     const objId = nanoid();
     const objectParam = {
@@ -319,7 +352,7 @@ const saveRequestToServer = async (respContent) => {
 
     const res = await saveObject(objectParam, contParam);
     if (res) {
-      // 保存成功之后，更新路由信息
+      // 保存成功之后，更新路由信息并刷新历史面板
       // 使用 setTimeout 确保在响应渲染完成后再更新路由
       setTimeout(() => {
         routerParams.updateQuery(
@@ -335,6 +368,11 @@ const saveRequestToServer = async (respContent) => {
             encode: false,
           }
         );
+        
+        // 清除相关缓存并触发历史面板刷新
+        clearApiCaches();
+        console.log('[Workspace] 请求保存成功，正在刷新历史面板...');
+        refreshHistoryPanel();
       }, 100); // 延迟 100ms 确保响应面板已完成初始化渲染
     } else {
       message.error("保存失败");
@@ -354,7 +392,6 @@ const saveObject = async (objectParam, contParam) => {
 
 // 处理选择历史请求
 const handleSelectRequest = (requestData) => {
-  // console.log("handleSelectRequest====", requestData);
   if (requestConfigRef.value) {
     requestConfigRef.value.loadRequest(requestData);
     routerParams.updateQuery(
@@ -372,9 +409,8 @@ const handleSelectRequest = (requestData) => {
   }
 };
 
-// 保存连接器
+// 保存连接器--suffix: "connector"
 const handleSaveConnector = async (requestData) => {
-  // console.log("Connector====", requestData);
   if (props.pid) {
     const _id = nanoid();
     // 更新对象
@@ -412,15 +448,17 @@ const handleSaveConnector = async (requestData) => {
     const objContRes = await api.objectCont.upsertObjContent(contParam);
     if (objRes?.data?.code === 200 && objContRes?.data?.code === 200) {
       message.success("连接器保存成功，请刷新当前目录查看！");
+      // 清除缓存并刷新历史面板
+      clearApiCaches();
+      refreshHistoryPanel();
     } else {
       message.error("保存失败");
     }
   }
 };
 
-// 保存更新API
+// 保存更新API-suffix: "api"
 const handleSaveApi = async (requestData) => {
-  // console.log("保存更新API====", requestData);
   if (props.pid && props.id) {
     const _id = props.id;
     // 更新对象
@@ -456,6 +494,9 @@ const handleSaveApi = async (requestData) => {
     const objContRes = await api.objectCont.upsertObjContent(contParam);
     if (objRes?.data?.code === 200 && objContRes?.data?.code === 200) {
       message.success("保存成功");
+      // 清除缓存并刷新历史面板
+      clearApiCaches();
+      refreshHistoryPanel();
     } else {
       message.error("保存失败");
     }
@@ -675,6 +716,12 @@ onMounted(() => {
 onUnmounted(() => {
   endResize();
   document.removeEventListener("keydown", handleKeyDown);
+
+  // 清理防抖计时器
+  if (refreshDebounceTimer) {
+    clearTimeout(refreshDebounceTimer);
+    refreshDebounceTimer = null;
+  }
 
   // 清理可能残留的全局样式
   document.body.style.userSelect = "";

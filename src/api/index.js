@@ -24,10 +24,10 @@ export const apiConfig = {
   
   // 缓存配置
   cache: {
-    enabled: true,
+    enabled: false, // 临时禁用缓存，修复历史记录刷新问题
     defaultTTL: 5 * 60 * 1000, // 5分钟
     maxSize: 200,
-    strategy: CacheStrategy.CACHE_FIRST
+    strategy: CacheStrategy.NETWORK_FIRST // 改为网络优先策略
   },
   
   // 重试配置

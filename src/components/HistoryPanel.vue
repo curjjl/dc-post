@@ -379,6 +379,16 @@ const deleteRequest = (item) => {
         const objContRes = await api.objectCont.deleteObjectCont(item.fid);
         if (objectRes.status === 200 && objContRes.status === 200) {
           message.success("删除成功");
+          
+          // 清除API缓存确保数据实时性
+          try {
+            if (api.clearCaches && typeof api.clearCaches === 'function') {
+              api.clearCaches();
+            }
+          } catch (error) {
+            console.warn('[Cache] 清除缓存失败:', error);
+          }
+          
           // 从本地列表中移除该项
           historyList.value = historyList.value.filter(
             (historyItem) => historyItem.fid !== item.fid
@@ -450,7 +460,7 @@ watch(
     props.dir,
     props.refreshFlag,
   ],
-  (newParams) => {
+  (newParams, oldParams) => {
     // console.log("查询参数变化:", {
     //   id: newParams[0],
     //   name: newParams[1],
@@ -459,18 +469,27 @@ watch(
     //   dir: newParams[4],
     //   refreshFlag: newParams[5],
     // });
-    handleQueryParamsChange();
+    
+    // 检查是否只有refreshFlag发生了变化
+    const isRefreshFlagOnly = oldParams && 
+      newParams[0] === oldParams[0] &&
+      newParams[1] === oldParams[1] &&
+      newParams[2] === oldParams[2] &&
+      newParams[3] === oldParams[3] &&
+      newParams[4] === oldParams[4] &&
+      newParams[5] !== oldParams[5];
+    
+    if (isRefreshFlagOnly) {
+      handleQueryParamsChange("api", "refresh");
+    } else {
+      handleQueryParamsChange();
+    }
   },
   { immediate: true }
 );
 
 // 处理查询参数变化
 function handleQueryParamsChange(type = "api") {
-  // 重置分页状态
-  currentPage.value = 1;
-  hasMore.value = true;
-  isInitialLoad.value = true;
-  
   const queryParams = {
     id: props.id,
     name: props.name,
@@ -482,15 +501,44 @@ function handleQueryParamsChange(type = "api") {
   if (hasValidQueryParams(queryParams)) {
     // 构建API查询参数
     const apiParams = buildApiQueryParams(queryParams);
-    fetchHistory(apiParams, type);
+    
+    // 检查是否是由refreshFlag变化触发的刷新
+    const isRefreshTriggered = arguments[1] === 'refresh';
+    
+    if (isRefreshTriggered && historyList.value.length > 0) {
+      // 智能刷新：仅获取最新的记录
+      fetchHistory(apiParams, type, true);
+    } else {
+      // 完全重载：重置分页状态
+      currentPage.value = 1;
+      hasMore.value = true;
+      isInitialLoad.value = true;
+      fetchHistory(apiParams, type, false);
+    }
   }
 }
 
 // 查询历史记录列表
-async function fetchHistory(apiParams, type) {
+async function fetchHistory(apiParams, type, isRefresh = false) {
   try {
     loading.value = true;
-    historyList.value = [];
+    
+    // 如果是刷新操作且已有数据，尝试智能更新而非完全重载
+    const shouldSmartRefresh = isRefresh && historyList.value.length > 0;
+    if (!shouldSmartRefresh) {
+      historyList.value = [];
+    }
+    
+    console.log(`[HistoryPanel] 开始获取历史记录 - 刷新模式: ${shouldSmartRefresh ? '智能刷新' : '完全重载'}`);
+    
+    // 强制清除相关API缓存
+    try {
+      if (api.clearCaches && typeof api.clearCaches === 'function') {
+        api.clearCaches();
+      }
+    } catch (error) {
+      console.warn('[Cache] 清除缓存失败:', error);
+    }
     
     const filterObj = {
       project_id: apiParams?.pid,
@@ -555,13 +603,43 @@ async function fetchHistory(apiParams, type) {
               pid: item.project_id,
               suffix: item.suffix,
             };
-            newItems.push(historyItem);
+            
+            // 智能刷新模式下，检查是否是新记录
+            if (shouldSmartRefresh) {
+              const existingItem = historyList.value.find(existing => existing.fid === historyItem.fid);
+              if (!existingItem) {
+                newItems.push(historyItem);
+              }
+            } else {
+              newItems.push(historyItem);
+            }
           } catch (parseError) {
             console.warn('解析历史记录失败:', parseError);
           }
         }
       });
-      historyList.value = newItems;
+      
+      if (shouldSmartRefresh) {
+        // 智能刷新：将新记录添加到列表开头
+        try {
+          historyList.value = [...newItems, ...historyList.value];
+          // 移除超出显示数量的旧记录，避免内存过多占用
+          if (historyList.value.length > pageSize.value * 3) {
+            historyList.value = historyList.value.slice(0, pageSize.value * 2);
+          }
+          
+          // 如果有新记录，显示成功提示
+          if (newItems.length > 0) {
+            console.log(`历史面板智能刷新成功，新增 ${newItems.length} 条记录`);
+          }
+        } catch (error) {
+          console.warn('智能刷新失败，回退到完全重载:', error);
+          historyList.value = newItems;
+        }
+      } else {
+        // 完全重载
+        historyList.value = newItems;
+      }
       
       // 更新hasMore状态
       hasMore.value = newItems.length === pageSize.value && historyList.value.length < totalCount.value;
