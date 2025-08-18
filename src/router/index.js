@@ -38,7 +38,11 @@ const routes = [
 ];
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHistory(
+    (window.location.pathname.startsWith("/access-view")
+      ? "/access-view"
+      : "") + "/dc-post"
+  ),
   routes,
 });
 

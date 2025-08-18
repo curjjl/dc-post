@@ -4,6 +4,7 @@ import { resolve } from 'path'
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  base: process.env.NODE_ENV === 'production' ? '/access-view/dc-post/' : '/dc-post/',
   plugins: [vue()],
   resolve: {
     alias: {
@@ -22,7 +23,7 @@ export default defineConfig({
     }
   },
   build: {
-    outDir: 'dist',
+    outDir: 'dist/dc-post',
     sourcemap: false,
     rollupOptions: {
       output: {
