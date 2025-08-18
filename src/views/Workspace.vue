@@ -383,7 +383,7 @@ const saveObject = async (objectParam, contParam) => {
 
 // 处理选择历史请求
 const handleSelectRequest = (requestData) => {
-  console.log('[Workspace] 处理选择历史请求，ID:', requestData.fid, '仅更新路由参数');
+  console.log('[Workspace] 处理选择历史请求，ID:', requestData, '仅更新路由参数');
   if (requestConfigRef.value) {
     requestConfigRef.value.loadRequest(requestData);
     routerParams.updateQuery(

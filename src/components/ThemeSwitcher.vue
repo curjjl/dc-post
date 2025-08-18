@@ -74,11 +74,10 @@
         </a-tab-pane>
 
         <!-- 自定义主题 -->
-        <a-tab-pane key="custom" tab="自定义主题">
+        <!-- <a-tab-pane key="custom" tab="自定义主题">
           <div class="theme-section">
             <p class="section-description">创建和管理自定义主题</p>
             
-            <!-- 自定义主题列表 -->
             <div v-if="customThemes.length > 0" class="custom-themes-list">
               <h4>我的主题</h4>
               <div class="theme-grid">
@@ -112,7 +111,6 @@
                     <div class="theme-preview-description">自定义主题</div>
                   </div>
                   
-                  <!-- 操作按钮 -->
                   <div class="theme-actions-overlay">
                     <a-button 
                       size="small" 
@@ -140,7 +138,6 @@
               </div>
             </div>
 
-            <!-- 创建新主题 -->
             <div class="create-theme-section">
               <a-button type="primary" @click="showThemeEditor = true">
                 <template #icon><PlusOutlined /></template>
@@ -148,10 +145,10 @@
               </a-button>
             </div>
           </div>
-        </a-tab-pane>
+        </a-tab-pane> -->
 
         <!-- 主题编辑器 -->
-        <a-tab-pane key="editor" tab="主题编辑器" :disabled="!showThemeEditor">
+        <!-- <a-tab-pane key="editor" tab="主题编辑器" :disabled="!showThemeEditor">
           <div v-if="showThemeEditor" class="theme-editor">
             <div class="editor-header">
               <h4>{{ editingTheme.key ? '编辑主题' : '创建新主题' }}</h4>
@@ -263,7 +260,6 @@
                 </a-col>
               </a-row>
 
-              <!-- 实时预览 -->
               <div class="theme-preview-section">
                 <h5>预览效果</h5>
                 <div class="live-preview" :style="getPreviewStyle()">
@@ -283,7 +279,6 @@
                 </div>
               </div>
 
-              <!-- 编辑器操作 -->
               <div class="editor-actions">
                 <a-space>
                   <a-button @click="cancelThemeEditor">取消</a-button>
@@ -294,10 +289,10 @@
               </div>
             </a-form>
           </div>
-        </a-tab-pane>
+        </a-tab-pane> -->
 
         <!-- 导入导出 -->
-        <a-tab-pane key="import-export" tab="导入导出">
+        <!-- <a-tab-pane key="import-export" tab="导入导出">
           <div class="import-export-section">
             <a-row :gutter="24">
               <a-col :span="12">
@@ -353,7 +348,7 @@
               </a-col>
             </a-row>
           </div>
-        </a-tab-pane>
+        </a-tab-pane> -->
       </a-tabs>
 
       <!-- 底部操作 -->
@@ -362,7 +357,7 @@
           <a-col>
             <a-space>
               <a-button @click="resetToDefault">重置为默认</a-button>
-              <a-button danger @click="clearAllCustomThemes">清除所有自定义主题</a-button>
+              <!-- <a-button danger @click="clearAllCustomThemes">清除所有自定义主题</a-button> -->
             </a-space>
           </a-col>
           <a-col>
@@ -596,6 +591,8 @@ const resetEditingTheme = () => {
 const deleteCustomTheme = (themeKey) => {
   Modal.confirm({
     title: '确认删除',
+    okText: '确认',
+    cancelText: '取消',
     content: '确定要删除这个自定义主题吗？此操作不可恢复。',
     onOk() {
       themeManager.removeCustomTheme(themeKey)
@@ -662,6 +659,8 @@ const resetToDefault = () => {
   Modal.confirm({
     title: '确认重置',
     content: '确定要重置为默认主题吗？这将清除所有自定义主题和设置。',
+    okText: '确认',
+    cancelText: '取消',
     onOk() {
       themeManager.reset()
       message.success('已重置为默认主题')
@@ -674,6 +673,8 @@ const clearAllCustomThemes = () => {
   Modal.confirm({
     title: '确认清除',
     content: '确定要清除所有自定义主题吗？此操作不可恢复。',
+    okText: '确认',
+    cancelText: '取消',
     onOk() {
       const themes = themeManager.getAllThemes()
       Object.keys(themes).forEach(key => {

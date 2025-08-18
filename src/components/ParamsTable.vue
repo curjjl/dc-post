@@ -236,7 +236,7 @@ const addNewRowIfNeeded = () => {
   line-height: 1.2;
 }
 
-:deep(.ant-table-tbody > tr > td) {
+/* :deep(.ant-table-tbody > tr > td) {
   padding: 8px 12px;
   border-bottom: 1px solid #f0f0f0;
 }
@@ -244,7 +244,7 @@ const addNewRowIfNeeded = () => {
 :deep(.ant-table-thead > tr > th) {
   background: #fafafa;
   font-weight: 500;
-}
+} */
 
 :deep(.ant-input) {
   border: none;
