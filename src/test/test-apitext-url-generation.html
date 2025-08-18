@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Text URL 生成测试</title>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #1890ff;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #fafafa;
+            border-radius: 6px;
+        }
+        .section h3 {
+            color: #333;
+            margin-top: 0;
+        }
+        .json-input {
+            width: 100%;
+            height: 300px;
+            font-family: 'Consolas', monospace;
+            font-size: 14px;
+            padding: 15px;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            resize: vertical;
+        }
+        .url-output {
+            width: 100%;
+            height: 100px;
+            font-family: 'Consolas', monospace;
+            font-size: 12px;
+            padding: 15px;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            background: #f6f6f6;
+            resize: vertical;
+        }
+        .btn {
+            background: #1890ff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        .btn:hover {
+            background: #40a9ff;
+        }
+        .btn-secondary {
+            background: #52c41a;
+        }
+        .btn-secondary:hover {
+            background: #73d13d;
+        }
+        .error {
+            color: #ff4d4f;
+            background: #fff2f0;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+        .success {
+            color: #52c41a;
+            background: #f6ffed;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>API Text URL 生成工具</h1>
+        
+        <div class="section">
+            <h3>1. 输入API JSON数据</h3>
+            <textarea id="apiJson" class="json-input" placeholder="请输入API JSON数据..."></textarea>
+            <div style="margin-top: 10px;">
+                <button class="btn" onclick="generateUrl()">生成URL</button>
+                <button class="btn btn-secondary" onclick="loadExample()">加载示例数据</button>
+                <button class="btn btn-secondary" onclick="testDecode()">测试解码</button>
+            </div>
+            <div id="message"></div>
+        </div>
+
+        <div class="section">
+            <h3>2. 生成的URL（可直接使用）</h3>
+            <textarea id="generatedUrl" class="url-output" readonly placeholder="生成的URL将显示在这里..."></textarea>
+            <div style="margin-top: 10px;">
+                <button class="btn" onclick="copyUrl()">复制URL</button>
+                <button class="btn btn-secondary" onclick="openUrl()">在新窗口打开</button>
+            </div>
+        </div>
+
+        <div class="section">
+            <h3>3. URL参数说明</h3>
+            <p><strong>基础URL：</strong>http://localhost:3000/dc-post/workspace</p>
+            <p><strong>必要参数：</strong></p>
+            <ul>
+                <li><code>name</code>: API名称（URL编码）</li>
+                <li><code>apiText</code>: API配置数据的JSON字符串（URL编码）</li>
+            </ul>
+            <p><strong>可选参数：</strong></p>
+            <ul>
+                <li><code>pid</code>: 项目ID</li>
+                <li><code>suffix</code>: 后缀（通常为"api"）</li>
+                <li><code>id</code>: 唯一标识符</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // 示例API数据
+        const exampleApiData = {
+            name: "查询用户测试7vi-001",
+            method: "GET",
+            url: "http://192.168.201.129:20831/bpce/cm_bpce_process_event_202507",
+            queryParams: [
+                {
+                    key: "keys",
+                    value: '{"DATE_FORMAT(create_time, \'%Y-%m-%d %H:00:00\')":"hour","COUNT(*)":"process_count"}',
+                    enabled: true
+                },
+                {
+                    key: "group",
+                    value: '{"DATE_FORMAT(create_time, \'%Y-%m-%d %H:00:00\')":1}',
+                    enabled: true
+                },
+                {
+                    key: "sort",
+                    value: '{"hour":1}',
+                    enabled: true
+                }
+            ],
+            headers: [
+                {
+                    key: "Content-Type",
+                    value: "application/json",
+                    enabled: true
+                },
+                {
+                    key: "Authorization",
+                    value: "{{token}}",
+                    enabled: true
+                },
+                {
+                    key: "",
+                    value: "",
+                    enabled: true
+                }
+            ],
+            auth: {
+                type: "none",
+                basic: { username: "", password: "" },
+                bearer: { token: "" },
+                oauth2: { accessToken: "" }
+            },
+            body: {
+                type: "raw",
+                raw: "",
+                formData: [{ key: "", value: "", enabled: true }],
+                urlencoded: [{ key: "", value: "", enabled: true }]
+            }
+        };
+
+        function loadExample() {
+            document.getElementById('apiJson').value = JSON.stringify(exampleApiData, null, 2);
+            showMessage('示例数据已加载', 'success');
+        }
+
+        function generateUrl() {
+            const jsonInput = document.getElementById('apiJson').value;
+            
+            if (!jsonInput.trim()) {
+                showMessage('请输入API JSON数据', 'error');
+                return;
+            }
+
+            try {
+                // 验证JSON格式
+                const apiData = JSON.parse(jsonInput);
+                
+                // 构建完整URL - 使用URLSearchParams自动进行正确的编码
+                const baseUrl = 'http://localhost:3000/dc-post/workspace';
+                const params = new URLSearchParams();
+                params.append('name', apiData.name || '请求名称');
+                params.append('pid', 'cmUWoVppFurlG6b');
+                params.append('suffix', 'api');
+                params.append('id', 'pD86v_gQGOA-gNulXUm7k');
+                // URLSearchParams会自动对JSON字符串进行正确的URL编码
+                params.append('apiText', JSON.stringify(apiData));
+                
+                const fullUrl = `${baseUrl}?${params.toString()}`;
+                
+                document.getElementById('generatedUrl').value = fullUrl;
+                showMessage('URL生成成功！', 'success');
+                
+            } catch (error) {
+                showMessage('JSON格式错误: ' + error.message, 'error');
+            }
+        }
+
+        function testDecode() {
+            const urlInput = document.getElementById('generatedUrl').value;
+            
+            if (!urlInput) {
+                showMessage('请先生成URL', 'error');
+                return;
+            }
+
+            try {
+                const url = new URL(urlInput);
+                const apiTextParam = url.searchParams.get('apiText');
+                
+                if (!apiTextParam) {
+                    showMessage('URL中没有找到apiText参数', 'error');
+                    return;
+                }
+
+                // URLSearchParams.get()已经自动解码了参数，直接解析JSON即可
+                const parsedData = JSON.parse(apiTextParam);
+                
+                console.log('解码结果:', parsedData);
+                showMessage('解码测试成功！请查看控制台输出', 'success');
+                
+            } catch (error) {
+                showMessage('解码测试失败: ' + error.message, 'error');
+            }
+        }
+
+        function copyUrl() {
+            const urlOutput = document.getElementById('generatedUrl');
+            if (!urlOutput.value) {
+                showMessage('没有可复制的URL', 'error');
+                return;
+            }
+            
+            urlOutput.select();
+            document.execCommand('copy');
+            showMessage('URL已复制到剪贴板', 'success');
+        }
+
+        function openUrl() {
+            const url = document.getElementById('generatedUrl').value;
+            if (!url) {
+                showMessage('没有可打开的URL', 'error');
+                return;
+            }
+            
+            window.open(url, '_blank');
+        }
+
+        function showMessage(text, type) {
+            const messageDiv = document.getElementById('message');
+            messageDiv.innerHTML = `<div class="${type}">${text}</div>`;
+            
+            // 3秒后清除消息
+            setTimeout(() => {
+                messageDiv.innerHTML = '';
+            }, 3000);
+        }
+
+        // 页面加载时自动加载示例数据
+        window.onload = function() {
+            loadExample();
+        };
+    </script>
+</body>
+</html>

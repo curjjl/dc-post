@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>历史记录选择修复测试</title>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #1890ff;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #fafafa;
+            border-radius: 6px;
+        }
+        .section h3 {
+            color: #333;
+            margin-top: 0;
+        }
+        .url-test {
+            width: 100%;
+            height: 80px;
+            font-family: 'Consolas', monospace;
+            font-size: 12px;
+            padding: 15px;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            background: #f6f6f6;
+            resize: vertical;
+            margin-bottom: 10px;
+        }
+        .btn {
+            background: #1890ff;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        .btn:hover {
+            background: #40a9ff;
+        }
+        .btn-success {
+            background: #52c41a;
+        }
+        .btn-success:hover {
+            background: #73d13d;
+        }
+        .btn-warning {
+            background: #faad14;
+        }
+        .btn-warning:hover {
+            background: #ffc53d;
+        }
+        .btn-danger {
+            background: #ff4d4f;
+        }
+        .btn-danger:hover {
+            background: #ff7875;
+        }
+        .status {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .status-success {
+            background: #f6ffed;
+            color: #52c41a;
+        }
+        .status-info {
+            background: #e6f7ff;
+            color: #1890ff;
+        }
+        .status-warning {
+            background: #fff7e6;
+            color: #faad14;
+        }
+        .status-error {
+            background: #fff2f0;
+            color: #ff4d4f;
+        }
+        .test-steps {
+            background: #e6f7ff;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+        }
+        .test-steps ol {
+            margin: 0;
+            padding-left: 20px;
+        }
+        .test-steps li {
+            margin-bottom: 8px;
+        }
+        .code {
+            font-family: 'Consolas', monospace;
+            font-size: 12px;
+            background: #f6f6f6;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+        .highlight {
+            background: #fff2e8;
+            color: #fa8c16;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-weight: bold;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        th, td {
+            border: 1px solid #d9d9d9;
+            padding: 8px 12px;
+            text-align: left;
+        }
+        th {
+            background: #fafafa;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>历史记录选择功能修复测试</h1>
+        
+        <div class="section">
+            <h3>🐛 问题描述</h3>
+            <p>在URL中存在 <span class="code">apiText</span> 参数时，点击左侧历史记录列表的项目无法正确回填表单，因为优先级逻辑会始终优先使用 <span class="code">apiText</span> 参数。</p>
+            
+            <h4>🔧 修复方案：</h4>
+            <ul>
+                <li><strong>Workspace.vue</strong>: 修改 <span class="code">handleSelectRequest</span> 函数，选择历史记录时清除 <span class="code">apiText</span> 参数</li>
+                <li><strong>RequestConfig.vue</strong>: 增强 <span class="code">apiText</span> 监听器，正确处理参数清除的情况</li>
+                <li><strong>优先级调整</strong>: 确保用户手动选择历史记录的操作优先级高于URL参数</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h3>🧪 测试步骤</h3>
+            <div class="test-steps">
+                <ol>
+                    <li>先访问一个<strong>带有apiText参数</strong>的URL，确认表单正确回填</li>
+                    <li>在左侧历史记录面板中<strong>点击任意一个历史项目</strong></li>
+                    <li>观察表单是否<strong>立即更新</strong>为选中的历史记录内容</li>
+                    <li>检查URL中的<strong>apiText参数是否被清除</strong></li>
+                    <li>确认后续操作正常（如再次点击其他历史记录）</li>
+                </ol>
+            </div>
+        </div>
+
+        <div class="section">
+            <h3>📋 测试用例</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>测试场景</th>
+                        <th>初始状态</th>
+                        <th>操作</th>
+                        <th>期望结果</th>
+                        <th>测试链接</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>场景1: 标准流程</td>
+                        <td>URL包含apiText参数</td>
+                        <td>点击历史记录项目</td>
+                        <td>表单更新，apiText参数被清除</td>
+                        <td><button class="btn btn-success" onclick="testScenario1()">生成测试URL</button></td>
+                    </tr>
+                    <tr>
+                        <td>场景2: 连续选择</td>
+                        <td>已选择一个历史记录</td>
+                        <td>继续点击其他历史记录</td>
+                        <td>表单正常切换</td>
+                        <td><button class="btn btn-warning" onclick="testScenario2()">生成测试URL</button></td>
+                    </tr>
+                    <tr>
+                        <td>场景3: 回退测试</td>
+                        <td>选择历史记录后</td>
+                        <td>浏览器后退按钮</td>
+                        <td>正确处理路由变化</td>
+                        <td><button class="btn" onclick="testScenario3()">生成测试URL</button></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="section">
+            <h3>🔗 当前测试URL</h3>
+            <textarea id="currentUrl" class="url-test" readonly></textarea>
+            <button class="btn" onclick="copyCurrentUrl()">复制URL</button>
+            <button class="btn btn-success" onclick="openCurrentUrl()">在新窗口打开</button>
+            <button class="btn btn-danger" onclick="clearUrl()">清除</button>
+            <div id="urlStatus" class="status"></div>
+        </div>
+
+        <div class="section">
+            <h3>🔍 调试信息</h3>
+            <h4>关键日志检查点：</h4>
+            <ul>
+                <li><span class="code">[Workspace] 处理选择历史请求，ID:</span> - 确认历史记录被选择</li>
+                <li><span class="code">[Workspace] 检测到apiText参数，选择历史记录时将清除该参数</span> - 确认apiText被清除</li>
+                <li><span class="code">[RequestConfig] apiText参数变化</span> - 确认RequestConfig正确响应参数变化</li>
+                <li><span class="code">[RequestConfig] apiText参数已清除，等待其他数据源</span> - 确认清除后的状态</li>
+            </ul>
+            
+            <div class="test-steps">
+                <h4>🔧 如何调试：</h4>
+                <ol>
+                    <li>打开浏览器开发者工具 (F12)</li>
+                    <li>切换到 Console 标签页</li>
+                    <li>执行测试步骤，观察日志输出</li>
+                    <li>检查 Network 标签页，确认API调用情况</li>
+                </ol>
+            </div>
+        </div>
+
+        <div class="section">
+            <h3>✅ 验收标准</h3>
+            <div class="test-steps">
+                <h4>修复成功的标志：</h4>
+                <ol>
+                    <li><span class="highlight">即时响应</span>: 点击历史记录后表单立即更新</li>
+                    <li><span class="highlight">参数清除</span>: URL中的apiText参数被正确移除</li>
+                    <li><span class="highlight">数据准确</span>: 表单显示的内容与选中的历史记录一致</li>
+                    <li><span class="highlight">后续正常</span>: 继续选择其他历史记录功能正常</li>
+                    <li><span class="highlight">无错误</span>: 控制台无相关错误信息</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 示例API数据 - 用于apiText参数
+        const exampleApiData = {
+            name: "查询用户测试7vi-001",
+            method: "GET",
+            url: "http://192.168.201.129:20831/bpce/cm_bpce_process_event_202507",
+            queryParams: [
+                {
+                    key: "keys",
+                    value: '{"DATE_FORMAT(create_time, \'%Y-%m-%d %H:00:00\')":"hour","COUNT(*)":"process_count"}',
+                    enabled: true
+                },
+                {
+                    key: "group", 
+                    value: '{"DATE_FORMAT(create_time, \'%Y-%m-%d %H:00:00\')":1}',
+                    enabled: true
+                }
+            ],
+            headers: [
+                {
+                    key: "Content-Type",
+                    value: "application/json",
+                    enabled: true
+                },
+                {
+                    key: "Authorization", 
+                    value: "{{token}}",
+                    enabled: true
+                }
+            ],
+            auth: {
+                type: "none",
+                basic: { username: "", password: "" },
+                bearer: { token: "" },
+                oauth2: { accessToken: "" }
+            },
+            body: {
+                type: "raw",
+                raw: "",
+                formData: [{ key: "", value: "", enabled: true }],
+                urlencoded: [{ key: "", value: "", enabled: true }]
+            }
+        };
+
+        function generateUrl(params) {
+            const baseUrl = 'http://localhost:3000/dc-post/workspace';
+            const urlParams = new URLSearchParams();
+            
+            Object.keys(params).forEach(key => {
+                if (params[key] !== null && params[key] !== undefined) {
+                    urlParams.append(key, params[key]);
+                }
+            });
+            
+            return `${baseUrl}?${urlParams.toString()}`;
+        }
+
+        function updateStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('urlStatus');
+            statusDiv.className = `status status-${type}`;
+            statusDiv.innerHTML = message;
+        }
+
+        function testScenario1() {
+            const params = {
+                name: exampleApiData.name,
+                pid: 'cmUWoVppFurlG6b',
+                suffix: 'api',
+                id: 'someExistingId123', // 模拟已存在的ID
+                apiText: JSON.stringify(exampleApiData)
+            };
+            const url = generateUrl(params);
+            document.getElementById('currentUrl').value = url;
+            updateStatus('🧪 场景1: 带有apiText参数的URL已生成。<br/>📝 请在打开页面后点击左侧历史记录列表中的任意项目进行测试。', 'info');
+        }
+
+        function testScenario2() {
+            const params = {
+                name: '连续选择测试',
+                pid: 'cmUWoVppFurlG6b',
+                suffix: 'api',
+                id: 'anotherExistingId456' // 不同的ID
+            };
+            const url = generateUrl(params);
+            document.getElementById('currentUrl').value = url;
+            updateStatus('🧪 场景2: 普通历史记录URL已生成。<br/>📝 用于测试连续选择历史记录的功能。', 'warning');
+        }
+
+        function testScenario3() {
+            // 生成一个复杂的测试场景
+            const complexApiData = {
+                ...exampleApiData,
+                name: "回退测试API",
+                method: "POST",
+                body: {
+                    type: "raw",
+                    raw: '{"test": "data"}',
+                    formData: [{ key: "", value: "", enabled: true }],
+                    urlencoded: [{ key: "", value: "", enabled: true }]
+                }
+            };
+            
+            const params = {
+                name: complexApiData.name,
+                pid: 'cmUWoVppFurlG6b',
+                suffix: 'api',
+                id: 'backTestId789',
+                apiText: JSON.stringify(complexApiData)
+            };
+            const url = generateUrl(params);
+            document.getElementById('currentUrl').value = url;
+            updateStatus('🧪 场景3: 回退测试URL已生成。<br/>📝 请先选择历史记录，然后使用浏览器后退按钮测试。', 'info');
+        }
+
+        function copyCurrentUrl() {
+            const urlTextarea = document.getElementById('currentUrl');
+            if (!urlTextarea.value) {
+                updateStatus('❌ 没有可复制的URL，请先生成测试URL', 'error');
+                return;
+            }
+            
+            urlTextarea.select();
+            document.execCommand('copy');
+            updateStatus('✅ URL已复制到剪贴板', 'success');
+        }
+
+        function openCurrentUrl() {
+            const url = document.getElementById('currentUrl').value;
+            if (!url) {
+                updateStatus('❌ 没有可打开的URL，请先生成测试URL', 'error');
+                return;
+            }
+            
+            window.open(url, '_blank');
+            updateStatus('✅ 已在新窗口打开测试URL', 'success');
+        }
+
+        function clearUrl() {
+            document.getElementById('currentUrl').value = '';
+            updateStatus('✅ URL已清除', 'info');
+        }
+
+        // 页面加载时默认生成场景1
+        window.onload = function() {
+            testScenario1();
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>优先级逻辑测试</title>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #1890ff;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #fafafa;
+            border-radius: 6px;
+        }
+        .section h3 {
+            color: #333;
+            margin-top: 0;
+        }
+        .url-test {
+            width: 100%;
+            height: 80px;
+            font-family: 'Consolas', monospace;
+            font-size: 12px;
+            padding: 15px;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            background: #f6f6f6;
+            resize: vertical;
+            margin-bottom: 10px;
+        }
+        .btn {
+            background: #1890ff;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        .btn:hover {
+            background: #40a9ff;
+        }
+        .btn-success {
+            background: #52c41a;
+        }
+        .btn-success:hover {
+            background: #73d13d;
+        }
+        .btn-warning {
+            background: #faad14;
+        }
+        .btn-warning:hover {
+            background: #ffc53d;
+        }
+        .status {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .status-success {
+            background: #f6ffed;
+            color: #52c41a;
+        }
+        .status-info {
+            background: #e6f7ff;
+            color: #1890ff;
+        }
+        .status-warning {
+            background: #fff7e6;
+            color: #faad14;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        th, td {
+            border: 1px solid #d9d9d9;
+            padding: 8px 12px;
+            text-align: left;
+        }
+        th {
+            background: #fafafa;
+            font-weight: 600;
+        }
+        .code {
+            font-family: 'Consolas', monospace;
+            font-size: 12px;
+            background: #f6f6f6;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>API Text 优先级逻辑测试</h1>
+        
+        <div class="section">
+            <h3>测试说明</h3>
+            <p>本页面用于测试 <strong>apiText 参数优先级逻辑</strong>：</p>
+            <ul>
+                <li>✅ 如果URL中存在 <span class="code">apiText</span> 参数且能成功解析，优先使用apiText进行表单回填</li>
+                <li>⚠️ 如果URL中没有 <span class="code">apiText</span> 参数或解析失败，则使用 <span class="code">id</span> 查询历史记录详情进行回显</li>
+                <li>📝 支持同时存在 <span class="code">apiText</span> 和 <span class="code">id</span> 参数的情况</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h3>测试场景</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>测试场景</th>
+                        <th>URL参数</th>
+                        <th>期望行为</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>场景1：仅有apiText</td>
+                        <td><span class="code">apiText=...</span></td>
+                        <td>使用apiText回填，不查询服务器</td>
+                        <td><button class="btn btn-success" onclick="testScenario1()">测试</button></td>
+                    </tr>
+                    <tr>
+                        <td>场景2：仅有id</td>
+                        <td><span class="code">id=xxx</span></td>
+                        <td>查询服务器历史记录进行回显</td>
+                        <td><button class="btn btn-warning" onclick="testScenario2()">测试</button></td>
+                    </tr>
+                    <tr>
+                        <td>场景3：同时有apiText和id</td>
+                        <td><span class="code">apiText=...&id=xxx</span></td>
+                        <td>优先使用apiText，忽略id查询</td>
+                        <td><button class="btn btn-success" onclick="testScenario3()">测试</button></td>
+                    </tr>
+                    <tr>
+                        <td>场景4：apiText格式错误</td>
+                        <td><span class="code">apiText=invalid&id=xxx</span></td>
+                        <td>fallback到id查询</td>
+                        <td><button class="btn btn-warning" onclick="testScenario4()">测试</button></td>
+                    </tr>
+                    <tr>
+                        <td>场景5：无参数</td>
+                        <td>无</td>
+                        <td>显示默认表单</td>
+                        <td><button class="btn" onclick="testScenario5()">测试</button></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="section">
+            <h3>当前测试URL</h3>
+            <textarea id="currentUrl" class="url-test" readonly></textarea>
+            <button class="btn" onclick="copyCurrentUrl()">复制URL</button>
+            <button class="btn btn-success" onclick="openCurrentUrl()">在新窗口打开</button>
+            <div id="urlStatus" class="status"></div>
+        </div>
+
+        <div class="section">
+            <h3>实现说明</h3>
+            <h4>Workspace.vue 修改:</h4>
+            <ul>
+                <li><strong>parseApiTextFromRoute()</strong> - 解析URL中的apiText参数</li>
+                <li><strong>fetchHistoryDetail()</strong> - 优先检查apiText，没有则查询id</li>
+                <li><strong>watch监听</strong> - 监听route.query.apiText变化</li>
+            </ul>
+            
+            <h4>RequestConfig.vue 修改:</h4>
+            <ul>
+                <li><strong>checkSelectedRequest()</strong> - 优先使用apiText参数</li>
+                <li><strong>parseApiTextFromRoute()</strong> - 解析和验证apiText数据</li>
+                <li><strong>watch监听</strong> - 监听apiText参数变化</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // 示例API数据
+        const exampleApiData = {
+            name: "查询用户测试7vi-001",
+            method: "GET",
+            url: "http://192.168.201.129:20831/bpce/cm_bpce_process_event_202507",
+            queryParams: [
+                {
+                    key: "keys",
+                    value: '{"DATE_FORMAT(create_time, \'%Y-%m-%d %H:00:00\')":"hour","COUNT(*)":"process_count"}',
+                    enabled: true
+                },
+                {
+                    key: "group", 
+                    value: '{"DATE_FORMAT(create_time, \'%Y-%m-%d %H:00:00\')":1}',
+                    enabled: true
+                },
+                {
+                    key: "sort",
+                    value: '{"hour":1}',
+                    enabled: true
+                }
+            ],
+            headers: [
+                {
+                    key: "Content-Type",
+                    value: "application/json",
+                    enabled: true
+                },
+                {
+                    key: "Authorization", 
+                    value: "{{token}}",
+                    enabled: true
+                }
+            ],
+            auth: {
+                type: "none",
+                basic: { username: "", password: "" },
+                bearer: { token: "" },
+                oauth2: { accessToken: "" }
+            },
+            body: {
+                type: "raw",
+                raw: "",
+                formData: [{ key: "", value: "", enabled: true }],
+                urlencoded: [{ key: "", value: "", enabled: true }]
+            }
+        };
+
+        function generateUrl(params) {
+            const baseUrl = 'http://localhost:3000/dc-post/workspace';
+            const urlParams = new URLSearchParams();
+            
+            Object.keys(params).forEach(key => {
+                if (params[key] !== null && params[key] !== undefined) {
+                    urlParams.append(key, params[key]);
+                }
+            });
+            
+            return `${baseUrl}?${urlParams.toString()}`;
+        }
+
+        function updateStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('urlStatus');
+            statusDiv.className = `status status-${type}`;
+            statusDiv.innerHTML = message;
+        }
+
+        function testScenario1() {
+            const params = {
+                name: exampleApiData.name,
+                pid: 'cmUWoVppFurlG6b',
+                suffix: 'api',
+                apiText: JSON.stringify(exampleApiData)
+            };
+            const url = generateUrl(params);
+            document.getElementById('currentUrl').value = url;
+            updateStatus('✅ 场景1: 仅有apiText参数 - 应该优先使用apiText进行回填', 'success');
+        }
+
+        function testScenario2() {
+            const params = {
+                name: '历史记录测试',
+                pid: 'cmUWoVppFurlG6b', 
+                suffix: 'api',
+                id: 'pD86v_gQGOA-gNulXUm7k'
+            };
+            const url = generateUrl(params);
+            document.getElementById('currentUrl').value = url;
+            updateStatus('⚠️ 场景2: 仅有id参数 - 应该查询服务器历史记录', 'warning');
+        }
+
+        function testScenario3() {
+            const params = {
+                name: exampleApiData.name,
+                pid: 'cmUWoVppFurlG6b',
+                suffix: 'api', 
+                id: 'pD86v_gQGOA-gNulXUm7k',
+                apiText: JSON.stringify(exampleApiData)
+            };
+            const url = generateUrl(params);
+            document.getElementById('currentUrl').value = url;
+            updateStatus('✅ 场景3: 同时有apiText和id - 应该优先使用apiText，忽略id查询', 'success');
+        }
+
+        function testScenario4() {
+            const params = {
+                name: '错误数据测试',
+                pid: 'cmUWoVppFurlG6b',
+                suffix: 'api',
+                id: 'pD86v_gQGOA-gNulXUm7k', 
+                apiText: 'invalid-json-data'
+            };
+            const url = generateUrl(params);
+            document.getElementById('currentUrl').value = url;
+            updateStatus('⚠️ 场景4: apiText格式错误 - 应该fallback到id查询', 'warning');
+        }
+
+        function testScenario5() {
+            const params = {
+                name: '默认表单',
+                pid: 'cmUWoVppFurlG6b',
+                suffix: 'api'
+            };
+            const url = generateUrl(params);
+            document.getElementById('currentUrl').value = url;
+            updateStatus('📝 场景5: 无apiText和id参数 - 应该显示默认表单', 'info');
+        }
+
+        function copyCurrentUrl() {
+            const urlTextarea = document.getElementById('currentUrl');
+            if (!urlTextarea.value) {
+                updateStatus('❌ 没有可复制的URL，请先选择一个测试场景', 'warning');
+                return;
+            }
+            
+            urlTextarea.select();
+            document.execCommand('copy');
+            updateStatus('✅ URL已复制到剪贴板', 'success');
+        }
+
+        function openCurrentUrl() {
+            const url = document.getElementById('currentUrl').value;
+            if (!url) {
+                updateStatus('❌ 没有可打开的URL，请先选择一个测试场景', 'warning');
+                return;
+            }
+            
+            window.open(url, '_blank');
+            updateStatus('✅ 已在新窗口打开URL', 'success');
+        }
+
+        // 页面加载时默认加载场景1
+        window.onload = function() {
+            testScenario1();
+        };
+    </script>
+</body>
+</html>

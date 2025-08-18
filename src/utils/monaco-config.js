@@ -35,7 +35,7 @@ export function setupMonacoEnvironment() {
           return new EditorWorker();
       }
     } catch (error) {
-      console.warn(`Failed to create worker for ${label}, falling back to main thread:`, error);
+      // console.warn(`Failed to create worker for ${label}, falling back to main thread:`, error);
       return null; // 回退到主线程模式
     }
   };
@@ -135,9 +135,9 @@ export function getThemeForMode(isDark = false) {
 export function initializeMonaco() {
   try {
     setupMonacoEnvironment();
-    console.log('Monaco Editor environment configured successfully');
+    // console.log('Monaco Editor environment configured successfully');
   } catch (error) {
-    console.error('Failed to configure Monaco Editor environment:', error);
+    // console.error('Failed to configure Monaco Editor environment:', error);
   }
 }
 

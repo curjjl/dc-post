@@ -372,6 +372,95 @@ const onSave = (type) => {
 //   localStorage.setItem("api_request_history", JSON.stringify(history));
 // };
 
+// 验证apiData是否符合requestForm的数据结构
+const validateApiData = (apiData) => {
+  if (typeof apiData !== "object" || apiData === null) {
+    return false;
+  }
+
+  // 验证必要的字段类型
+  const validMethods = [
+    "GET",
+    "POST",
+    "PUT",
+    "DELETE",
+    "PATCH",
+    "HEAD",
+    "OPTIONS",
+  ];
+  if (apiData.method && !validMethods.includes(apiData.method)) {
+    console.warn("无效的HTTP方法:", apiData.method);
+  }
+
+  // 验证queryParams格式
+  if (apiData.queryParams && !Array.isArray(apiData.queryParams)) {
+    console.warn("queryParams应该是数组格式");
+    return false;
+  }
+
+  // 验证headers格式
+  if (apiData.headers && !Array.isArray(apiData.headers)) {
+    console.warn("headers应该是数组格式");
+    return false;
+  }
+
+  return true;
+};
+
+// 解析URL中的apiText参数
+const parseApiTextFromRoute = () => {
+  try {
+    const apiTextParam = route.query.apiText;
+    if (!apiTextParam) return null;
+
+    // 直接解析JSON数据，Vue Router已经自动解码了URL参数
+    let apiData;
+    if (typeof apiTextParam === "string") {
+      apiData = JSON.parse(apiTextParam);
+    } else {
+      apiData = apiTextParam;
+    }
+
+    // 验证数据结构
+    if (!validateApiData(apiData)) {
+      console.warn("apiText参数数据结构验证失败");
+      return null;
+    }
+
+    // 确保数据完整性，补充缺失的字段
+    const completeApiData = {
+      name: apiData.name || "请求名称",
+      method: apiData.method || "GET",
+      url: apiData.url || "",
+      queryParams: apiData.queryParams || [
+        { key: "", value: "", enabled: true },
+      ],
+      headers: apiData.headers || [
+        { key: "Content-Type", value: "application/json", enabled: true },
+        { key: "", value: "", enabled: true },
+      ],
+      auth: apiData.auth || {
+        type: "none",
+        basic: { username: "", password: "" },
+        bearer: { token: "" },
+        oauth2: { accessToken: "" },
+      },
+      body: apiData.body || {
+        type: "raw",
+        raw: "",
+        formData: [{ key: "", value: "", enabled: true }],
+        urlencoded: [{ key: "", value: "", enabled: true }],
+      },
+    };
+
+    console.log("成功解析apiText参数:", completeApiData);
+    return completeApiData;
+  } catch (error) {
+    console.error("解析apiText参数失败:", error);
+    return null;
+  }
+};
+
 // 加载请求数据（从历史记录或其他来源）
 const loadRequest = (requestData) => {
   isUpdatingUrl.value = true;
@@ -384,8 +473,16 @@ const loadRequest = (requestData) => {
   isUpdatingUrl.value = false;
 };
 
-// 检查是否有选中的请求需要加载
+// 检查是否有选中的请求需要加载或路由中的apiText参数
 const checkSelectedRequest = () => {
+  // 优先检查路由中的apiText参数
+  const apiTextData = parseApiTextFromRoute();
+  if (apiTextData) {
+    loadRequest(apiTextData);
+    return;
+  }
+
+  // 如果没有apiText参数，检查sessionStorage中的选中请求
   const selected = sessionStorage.getItem("selected_request");
   if (selected) {
     const requestData = JSON.parse(selected);
@@ -408,6 +505,28 @@ watch(
   () => requestForm.value.url,
   () => {
     updateDisplayUrl();
+  }
+);
+
+// 监听路由查询参数变化，处理apiText参数更新
+watch(
+  () => route.query.apiText,
+  (newApiText, oldApiText) => {
+    console.log('[RequestConfig] apiText参数变化:', {
+      新值: newApiText ? '存在' : '不存在',
+      旧值: oldApiText ? '存在' : '不存在'
+    });
+    
+    if (newApiText) {
+      const apiTextData = parseApiTextFromRoute();
+      if (apiTextData) {
+        console.log('[RequestConfig] 使用apiText参数加载数据');
+        loadRequest(apiTextData);
+      }
+    } else if (oldApiText && !newApiText) {
+      console.log('[RequestConfig] apiText参数已清除，等待其他数据源');
+      // apiText被清除时，不做任何操作，让其他机制（如handleSelectRequest）处理
+    }
   }
 );
 

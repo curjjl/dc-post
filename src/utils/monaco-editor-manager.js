@@ -22,7 +22,7 @@ class MonacoEditorManager {
   // 注册新的编辑器实例
   register(editorId, editor) {
     if (this.editors.has(editorId)) {
-      console.warn(`Editor with ID ${editorId} already exists`)
+      // console.warn(`Editor with ID ${editorId} already exists`)
       return false
     }
     
@@ -32,7 +32,7 @@ class MonacoEditorManager {
       lastUsed: Date.now()
     })
     
-    console.log(`Monaco editor registered: ${editorId} (Total: ${this.editors.size})`)
+    // console.log(`Monaco editor registered: ${editorId} (Total: ${this.editors.size})`)
     return true
   }
 
@@ -55,9 +55,9 @@ class MonacoEditorManager {
 
     try {
       editorInfo.editor.dispose()
-      console.log(`Monaco editor disposed: ${editorId}`)
+      // console.log(`Monaco editor disposed: ${editorId}`)
     } catch (error) {
-      console.warn(`Error disposing Monaco editor ${editorId}:`, error)
+      // console.warn(`Error disposing Monaco editor ${editorId}:`, error)
     } finally {
       this.editors.delete(editorId)
       this.creationPromises.delete(editorId)
@@ -77,7 +77,7 @@ class MonacoEditorManager {
       }
     })
     
-    console.log(`Disposed ${disposed} Monaco editors`)
+    // console.log(`Disposed ${disposed} Monaco editors`)
     return disposed
   }
 
@@ -115,7 +115,7 @@ class MonacoEditorManager {
     })
     
     if (cleaned > 0) {
-      console.log(`Cleaned up ${cleaned} unused Monaco editors`)
+      // console.log(`Cleaned up ${cleaned} unused Monaco editors`)
     }
     
     return cleaned
@@ -180,7 +180,7 @@ class MonacoEditorManager {
       this.cleanupUnused()
     }, interval)
     
-    console.log('Monaco Editor periodic cleanup started')
+    // console.log('Monaco Editor periodic cleanup started')
   }
 
   // 停止定期清理
@@ -188,7 +188,7 @@ class MonacoEditorManager {
     if (this.cleanupInterval) {
       clearInterval(this.cleanupInterval)
       this.cleanupInterval = null
-      console.log('Monaco Editor periodic cleanup stopped')
+      // console.log('Monaco Editor periodic cleanup stopped')
     }
   }
 }

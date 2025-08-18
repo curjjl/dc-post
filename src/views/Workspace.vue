@@ -125,7 +125,7 @@
 
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from "vue";
-import { useRouter } from "vue-router";
+import { useRouter, useRoute } from "vue-router";
 import {
   HistoryOutlined,
   BgColorsOutlined,
@@ -181,6 +181,7 @@ const props = defineProps({
 });
 
 const router = useRouter();
+const route = useRoute();
 const routerParams = useRouterParams();
 
 // 面板折叠状态
@@ -383,21 +384,38 @@ const saveObject = async (objectParam, contParam) => {
 
 // 处理选择历史请求
 const handleSelectRequest = (requestData) => {
-  console.log('[Workspace] 处理选择历史请求，ID:', requestData, '仅更新路由参数');
+  console.log('[Workspace] 处理选择历史请求，ID:', requestData);
+  
   if (requestConfigRef.value) {
+    // 先加载请求数据到表单
     requestConfigRef.value.loadRequest(requestData);
-    routerParams.updateQuery(
-      {
-        id: requestData.fid,
-        name: requestData.name,
-        pid: requestData.pid,
-        suffix: requestData.suffix,
-      },
-      {
+    
+    // 更新路由参数，确保清除apiText参数以避免优先级冲突
+    const newQuery = {
+      id: requestData.fid,
+      name: requestData.name,
+      pid: requestData.pid,
+      suffix: requestData.suffix,
+    };
+    
+    // 如果当前URL中存在apiText参数，需要明确移除它
+    if (route.query.apiText) {
+      console.log('[Workspace] 检测到apiText参数，选择历史记录时将清除该参数');
+      // 使用router.replace来清除apiText参数
+      router.replace({
+        path: route.path,
+        query: {
+          ...newQuery,
+          // 明确不包含apiText参数
+        }
+      });
+    } else {
+      // 如果没有apiText参数，使用原有的更新方式
+      routerParams.updateQuery(newQuery, {
         replace: true,
         encode: false,
-      }
-    );
+      });
+    }
   }
 };
 
@@ -534,26 +552,66 @@ const goToHistory = () => {
 
 // 监听查询参数变化
 watch(
-  () => [props.id, props.pid, props.dir],
+  () => [props.id, props.pid, props.dir, route.query.apiText],
   (newParams) => {
-    // console.log("查询参数变化:", {
-    //   id: newParams[0],
-    //   name: newParams[1],
-    //   code: newParams[2],
-    //   pid: newParams[3],
-    //   dir: newParams[4],
-    //   refreshFlag: newParams[5],
-    // });
-    fetchHistoryDetail(newParams[0]);
+    const [id, pid, dir, apiText] = newParams;
+    console.log("Workspace: 查询参数变化:", {
+      id,
+      pid,
+      dir,
+      hasApiText: !!apiText
+    });
+    // 传递id，但fetchHistoryDetail内部会优先检查apiText
+    fetchHistoryDetail(id);
   },
   { immediate: true }
 );
 
+// 解析URL中的apiText参数（与RequestConfig.vue中的逻辑保持一致）
+function parseApiTextFromRoute() {
+  try {
+    const apiTextParam = route.query.apiText;
+    if (!apiTextParam) return null;
+
+    // 直接解析JSON数据，Vue Router已经自动解码了URL参数
+    let apiData;
+    if (typeof apiTextParam === "string") {
+      apiData = JSON.parse(apiTextParam);
+    } else {
+      apiData = apiTextParam;
+    }
+    
+    // 简单的数据验证
+    if (typeof apiData !== "object" || apiData === null) {
+      console.warn("apiText参数格式不正确");
+      return null;
+    }
+    
+    console.log("Workspace: 成功解析apiText参数:", apiData);
+    return apiData;
+  } catch (error) {
+    console.error("Workspace: 解析apiText参数失败:", error);
+    return null;
+  }
+};
+
 // 查询当前调试记录详情并回显
 async function fetchHistoryDetail(id) {
+  // 优先检查路由中的apiText参数
+  const apiTextData = parseApiTextFromRoute();
+  if (apiTextData) {
+    console.log("Workspace: 使用apiText参数进行回填，跳过id查询");
+    // 如果有apiText参数，让RequestConfig组件自己处理
+    // 这里不需要手动loadRequest，因为RequestConfig已经处理了
+    return;
+  }
+  
+  // 如果没有apiText参数且有id，则查询服务器数据
   if (!id) {
     return;
   }
+  
+  console.log("Workspace: 使用id查询历史记录详情:", id);
   const res = await api.objectCont.getObjectInfo(id);
   if (res.status === 200 && res?.data?.data) {
     const cont = res?.data?.data?.content;
@@ -572,7 +630,7 @@ async function fetchHistoryDetail(id) {
         pid: props.pid,
         suffix: props.suffix,
       };
-      requestConfigRef.value.loadRequest(apiItem);
+      requestConfigRef.value?.loadRequest(apiItem);
     }
   }
 }
