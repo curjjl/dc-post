@@ -61,10 +61,10 @@
                       <template #icon><PlayCircleOutlined /></template>
                       使用此请求
                     </a-menu-item>
-                    <a-menu-item @click="duplicateRequest(item)">
+                    <!-- <a-menu-item @click="duplicateRequest(item)">
                       <template #icon><CopyOutlined /></template>
                       复制请求
-                    </a-menu-item>
+                    </a-menu-item> -->
                     <a-menu-divider />
                     <a-menu-item @click="deleteRequest(item)" danger>
                       <template #icon><DeleteOutlined /></template>
@@ -352,17 +352,17 @@ const selectRequest = (item) => {
 };
 
 // 复制请求
-const duplicateRequest = (item) => {
-  const newItem = {
-    ...item,
-    id: Date.now().toString(),
-    timestamp: Date.now(),
-  };
+// const duplicateRequest = (item) => {
+//   const newItem = {
+//     ...item,
+//     id: Date.now().toString(),
+//     timestamp: Date.now(),
+//   };
 
-  historyList.value.unshift(newItem);
-  // saveHistory();
-  message.success("请求已复制");
-};
+//   historyList.value.unshift(newItem);
+//   // saveHistory();
+//   message.success("请求已复制");
+// };
 
 // 删除单个请求
 const deleteRequest = (item) => {

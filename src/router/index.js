@@ -19,6 +19,7 @@ const routes = [
       name: route.query.name,
       code: route.query.code,
       pname: route.query.pname,
+      apiText: route.query.apiText,
     }),
   },
   {
@@ -33,6 +34,7 @@ const routes = [
       name: route.query.name,
       code: route.query.code,
       pname: route.query.pname,
+      apiText: route.query.apiText,
     }),
   },
 ];
