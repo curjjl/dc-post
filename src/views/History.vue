@@ -267,7 +267,7 @@ const retryCount = ref(0);
 const maxRetries = 3;
 
 // 分页相关
-const pageSize = 10;
+const pageSize = 20;
 const currentPage = ref(1);
 const hasMore = ref(true);
 const isInitialLoad = ref(true);
@@ -416,7 +416,7 @@ const resetDisplayedData = async () => {
   }
 };
 
-// 滚动处理（添加节流）
+// 滚动处理（优化性能和兼容性）
 const handleScroll = () => {
   if (
     !scrollContainer.value ||
@@ -429,16 +429,23 @@ const handleScroll = () => {
 
   const { scrollTop, scrollHeight, clientHeight } = scrollContainer.value;
 
-  // 距离底部100px时开始加载
-  if (scrollTop + clientHeight >= scrollHeight - 100) {
+  // 优化：使用自适应阈值，提高不同屏幕尺寸的兼容性
+  const remainingHeight = scrollHeight - scrollTop - clientHeight;
+  const dynamicThreshold = Math.min(150, Math.max(50, scrollHeight * 0.1));
+
+  // 当距离底部小于动态阈值时开始加载
+  if (remainingHeight <= dynamicThreshold) {
     // 节流处理，避免重复触发
     if (loadMoreTimeout) {
       clearTimeout(loadMoreTimeout);
     }
 
     loadMoreTimeout = setTimeout(() => {
-      loadMoreData();
-    }, 200); // 减少延迟提升响应性
+      // 使用 requestAnimationFrame 优化加载时机
+      requestAnimationFrame(() => {
+        loadMoreData();
+      });
+    }, 150); // 平衡响应性和性能
   }
 };
 
@@ -565,7 +572,7 @@ async function fetchHistoryPage(apiParams, type, page = 1, isReset = false) {
 
     const params = {
       page: page,
-      pagesize: pageSize || 10,
+      pagesize: pageSize || 20,
       filter: JSON.stringify(clearEmptyProperties(filterObj)),
       join: JSON.stringify(joinObj),
       keys: JSON.stringify(keyObj),
@@ -851,6 +858,7 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   background: #f5f5f5;
+  min-height: 0; /* 允许弹性容器收缩 */
 }
 
 /* 固定头部 */
@@ -923,6 +931,8 @@ onUnmounted(() => {
   flex: 1;
   overflow-y: auto;
   padding: 0 24px;
+  min-height: 0; /* 关键：允许滚动容器收缩 */
+  height: 0; /* 强制计算高度 */
 }
 
 .history-list {
@@ -1206,5 +1216,67 @@ onUnmounted(() => {
 
 [data-theme="dark"] .load-error .ant-result {
   background: transparent;
+}
+
+/* 高度适配优化 - 不同分辨率下的滚动容器 */
+@media (max-height: 600px) {
+  .history-content {
+    max-height: calc(100vh - 140px); /* 小屏幕设备 */
+  }
+}
+
+@media (min-height: 800px) {
+  .history-content {
+    max-height: calc(100vh - 180px); /* 中等屏幕设备 */
+  }
+}
+
+@media (min-height: 1080px) {
+  .history-content {
+    max-height: calc(100vh - 200px); /* 大屏幕设备 */
+  }
+}
+
+/* 移动端响应式优化 */
+@media (max-width: 768px) {
+  .history-content {
+    padding: 0 16px;
+    max-height: calc(100vh - 160px); /* 移动端屏幕适配 */
+  }
+  
+  .history-list {
+    padding: 16px 0;
+  }
+}
+
+/* 触摸设备优化 */
+@media (pointer: coarse) {
+  .history-content {
+    -webkit-overflow-scrolling: touch; /* iOS平滑滚动 */
+    max-height: calc(100vh - 150px); /* 触摸设备高度适配 */
+  }
+}
+
+/* 宽高比适配 */
+@media (max-aspect-ratio: 1/1) {
+  /* 竖屏设备 */
+  .history-content {
+    max-height: calc(100vh - 170px);
+  }
+}
+
+@media (min-aspect-ratio: 16/9) {
+  /* 宽屏设备 */
+  .history-content {
+    max-height: calc(100vh - 220px);
+  }
+}
+
+/* 高DPI屏幕优化 */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .history-content {
+    /* 针对高分辨率屏幕的滚动优化 */
+    will-change: scroll-position;
+  }
 }
 </style>

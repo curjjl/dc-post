@@ -375,7 +375,7 @@ const saveRequestToServer = async (respContent) => {
   }
 };
 
-// 保存对象和对象内容
+// 每次发送请求后保存对象和对象内容 -- 保存请求历史记录
 const saveObject = async (objectParam, contParam) => {
   const objRes = await api.object.upsertObject(objectParam);
   const objContRes = await api.objectCont.upsertObjContent(contParam);
@@ -384,7 +384,7 @@ const saveObject = async (objectParam, contParam) => {
 
 // 处理选择历史请求
 const handleSelectRequest = (requestData) => {
-  console.log('[Workspace] 处理选择历史请求，ID:', requestData);
+  // console.log('[Workspace] 处理选择历史请求，ID:', requestData);
   
   if (requestConfigRef.value) {
     // 先加载请求数据到表单
@@ -469,8 +469,8 @@ const handleSaveConnector = async (requestData) => {
 
 // 保存更新API-suffix: "api"
 const handleSaveApi = async (requestData) => {
-  if (props.pid && props.id) {
-    const _id = props.id;
+  if (props.pid) {
+    const _id = props.id || nanoid(); // 如果props.id存在，则使用props.id保存更新，否则生成一个唯一ID，新建
     // 更新对象
     const objectParam = {
       id: _id,
@@ -821,6 +821,8 @@ initPanelWidths();
   border-left: 1px solid #f0f0f0;
   border-right: 1px solid #f0f0f0;
   position: relative;
+  height: calc(100vh - 64px); /* 确保侧边栏高度适配 */
+  min-height: 0; /* 允许内容收缩 */
 }
 
 .sider-header {
@@ -997,5 +999,65 @@ initPanelWidths();
 
 [data-theme="dark"] .main-content {
   background: #000;
+}
+
+/* 响应式高度适配优化 */
+@media (max-height: 600px) {
+  .history-sider,
+  .response-sider {
+    height: calc(100vh - 50px); /* 小屏幕设备 */
+  }
+}
+
+@media (min-height: 800px) {
+  .history-sider,
+  .response-sider {
+    height: calc(100vh - 70px); /* 中等屏幕设备 */
+  }
+}
+
+@media (min-height: 1080px) {
+  .history-sider,
+  .response-sider {
+    height: calc(100vh - 80px); /* 大屏幕设备 */
+  }
+}
+
+/* 移动端优化 */
+@media (max-width: 768px) {
+  .history-sider,
+  .response-sider {
+    height: calc(100vh - 60px); /* 移动端适配 */
+  }
+  
+  .workspace-layout {
+    overflow: hidden; /* 防止移动端滚动问题 */
+  }
+}
+
+/* 确保侧边栏内容能够正确滚动 */
+.history-sider .ant-layout-sider-children,
+.response-sider .ant-layout-sider-children {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+/* 宽高比适配 */
+@media (max-aspect-ratio: 1/1) {
+  /* 竖屏设备 */
+  .history-sider,
+  .response-sider {
+    height: calc(100vh - 65px);
+  }
+}
+
+@media (min-aspect-ratio: 16/9) {
+  /* 宽屏设备 */
+  .history-sider,
+  .response-sider {
+    height: calc(100vh - 75px);
+  }
 }
 </style>

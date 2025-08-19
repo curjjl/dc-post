@@ -181,7 +181,7 @@ const searchKeyword = ref("");
 const loading = ref(false);
 const loadingMore = ref(false);
 const currentPage = ref(1);
-const pageSize = ref(10);
+const pageSize = ref(20);
 const hasMore = ref(true);
 const isInitialLoad = ref(true);
 
@@ -303,18 +303,24 @@ function throttle(func, delay) {
   };
 }
 
-// 滚动事件处理
+// 滚动事件处理 - 优化性能
 const handleScroll = throttle((event) => {
   if (!historyListRef.value || searchKeyword.value.trim()) return;
   
   const { scrollTop, scrollHeight, clientHeight } = event.target;
-  const scrollPercentage = (scrollTop + clientHeight) / scrollHeight;
   
-  // 当滚动到底部85%时加载更多
-  if (scrollPercentage >= 0.85 && hasMore.value && !loadingMore.value && !loading.value) {
-    loadMore();
+  // 优化：提前计算，避免重复除法运算
+  const remainingHeight = scrollHeight - scrollTop - clientHeight;
+  const threshold = Math.min(100, scrollHeight * 0.15); // 自适应阈值
+  
+  // 当距离底部小于阈值时加载更多
+  if (remainingHeight <= threshold && hasMore.value && !loadingMore.value && !loading.value) {
+    // 使用 requestAnimationFrame 优化加载时机
+    requestAnimationFrame(() => {
+      loadMore();
+    });
   }
-}, 200);
+}, 100); // 减少节流延迟以提高响应性
 
 // 加载更多数据
 const loadMore = async () => {
@@ -778,6 +784,7 @@ onUnmounted(() => {
   height: 100%;
   display: flex;
   flex-direction: column;
+  min-height: 0; /* 允许弹性容器收缩 */
 }
 
 .search-section {
@@ -790,6 +797,8 @@ onUnmounted(() => {
   flex: 1;
   overflow-y: auto;
   padding: 8px 0;
+  min-height: 0; /* 关键：允许滚动容器收缩 */
+  height: 0; /* 强制计算高度 */
 }
 
 .history-item {
@@ -1012,5 +1021,54 @@ onUnmounted(() => {
 [data-theme="dark"] .completion-hint {
   color: #52c41a;
   background: linear-gradient(90deg, transparent 0%, #162312 20%, #162312 80%, transparent 100%);
+}
+
+/* 高度适配优化 - 不同分辨率下的滚动容器 */
+@media (max-height: 600px) {
+  .history-list {
+    max-height: calc(100vh - 120px);
+  }
+}
+
+@media (min-height: 800px) {
+  .history-list {
+    max-height: calc(100vh - 180px);
+  }
+}
+
+@media (min-height: 1080px) {
+  .history-list {
+    max-height: calc(100vh - 200px);
+  }
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+  .history-list {
+    max-height: calc(100vh - 200px); /* 动态适配移动端屏幕 */
+  }
+}
+
+/* 触摸设备优化 */
+@media (pointer: coarse) {
+  .history-list {
+    -webkit-overflow-scrolling: touch; /* iOS平滑滚动 */
+    max-height: calc(100vh - 150px); /* 触摸设备高度适配 */
+  }
+}
+
+/* 宽高比适配 */
+@media (max-aspect-ratio: 1/1) {
+  /* 竖屏设备 */
+  .history-list {
+    max-height: calc(100vh - 160px);
+  }
+}
+
+@media (min-aspect-ratio: 16/9) {
+  /* 宽屏设备 */
+  .history-list {
+    max-height: calc(100vh - 220px);
+  }
 }
 </style>

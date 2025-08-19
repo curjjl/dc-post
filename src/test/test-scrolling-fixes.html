@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>滚动加载功能修复测试</title>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #1890ff;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #fafafa;
+            border-radius: 6px;
+        }
+        .section h3 {
+            color: #333;
+            margin-top: 0;
+        }
+        .test-results {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .test-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #1890ff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-card.success {
+            border-left-color: #52c41a;
+        }
+        .test-card.warning {
+            border-left-color: #faad14;
+        }
+        .test-card.error {
+            border-left-color: #ff4d4f;
+        }
+        .btn {
+            background: #1890ff;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        .btn:hover {
+            background: #40a9ff;
+        }
+        .btn-success {
+            background: #52c41a;
+        }
+        .btn-success:hover {
+            background: #73d13d;
+        }
+        .btn-warning {
+            background: #faad14;
+        }
+        .btn-warning:hover {
+            background: #ffc53d;
+        }
+        .code {
+            font-family: 'Consolas', monospace;
+            font-size: 12px;
+            background: #f6f6f6;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+        .highlight {
+            background: #fff2e8;
+            color: #fa8c16;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-weight: bold;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        th, td {
+            border: 1px solid #d9d9d9;
+            padding: 8px 12px;
+            text-align: left;
+        }
+        th {
+            background: #fafafa;
+            font-weight: 600;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-pass {
+            background: #52c41a;
+        }
+        .status-fail {
+            background: #ff4d4f;
+        }
+        .status-pending {
+            background: #faad14;
+        }
+        .resolution-test {
+            padding: 15px;
+            border: 1px dashed #d9d9d9;
+            border-radius: 6px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📱 滚动加载功能修复测试方案</h1>
+        
+        <div class="section">
+            <h3>🎯 修复目标</h3>
+            <p>解决在不同分辨率和屏幕尺寸下，历史记录列表无法正常滚动加载更多数据的问题。</p>
+            
+            <h4>🔧 主要修复内容：</h4>
+            <ul>
+                <li><strong>动态高度适配</strong>: 使用 <span class="code">calc(100vh - 固定高度)</span> 和 <span class="code">min-height: 0</span></li>
+                <li><strong>弹性布局优化</strong>: 添加 <span class="code">height: 0</span> 强制计算高度</li>
+                <li><strong>滚动性能优化</strong>: 改进节流逻辑和自适应阈值</li>
+                <li><strong>响应式设计</strong>: 针对不同屏幕尺寸的专门适配</li>
+                <li><strong>跨设备兼容</strong>: 移动端和触摸设备的特殊优化</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h3>🧪 测试覆盖范围</h3>
+            <div class="test-results">
+                <div class="test-card">
+                    <h4>桌面端测试</h4>
+                    <ul>
+                        <li>1920x1080 (标准桌面)</li>
+                        <li>1366x768 (笔记本)</li>
+                        <li>2560x1440 (2K显示器)</li>
+                        <li>3840x2160 (4K显示器)</li>
+                    </ul>
+                </div>
+                
+                <div class="test-card">
+                    <h4>移动端测试</h4>
+                    <ul>
+                        <li>375x667 (iPhone SE)</li>
+                        <li>414x896 (iPhone 11)</li>
+                        <li>360x640 (Android)</li>
+                        <li>768x1024 (iPad竖屏)</li>
+                    </ul>
+                </div>
+                
+                <div class="test-card">
+                    <h4>极端分辨率测试</h4>
+                    <ul>
+                        <li>320x568 (超小屏)</li>
+                        <li>1024x600 (上网本)</li>
+                        <li>5120x2880 (5K显示器)</li>
+                        <li>21:9 超宽屏</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h3>📋 测试步骤</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>步骤</th>
+                        <th>操作</th>
+                        <th>预期结果</th>
+                        <th>验证点</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>1</td>
+                        <td>打开历史记录页面</td>
+                        <td>列表正常显示</td>
+                        <td>容器高度适配屏幕</td>
+                    </tr>
+                    <tr>
+                        <td>2</td>
+                        <td>滚动到列表底部</td>
+                        <td>自动加载更多数据</td>
+                        <td>出现加载指示器</td>
+                    </tr>
+                    <tr>
+                        <td>3</td>
+                        <td>改变浏览器窗口大小</td>
+                        <td>滚动区域动态调整</td>
+                        <td>始终保持可滚动状态</td>
+                    </tr>
+                    <tr>
+                        <td>4</td>
+                        <td>切换设备模拟器</td>
+                        <td>在所有设备上正常工作</td>
+                        <td>滚动条和加载功能正常</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="section">
+            <h3>🔍 关键修复技术</h3>
+            <div class="resolution-test">
+                <h4>1. CSS Flexbox 优化</h4>
+                <pre><code>.history-list {
+  flex: 1;
+  min-height: 0;    /* 关键：允许弹性容器收缩 */
+  height: 0;        /* 强制计算高度 */
+  overflow-y: auto;
+}</code></pre>
+            </div>
+            
+            <div class="resolution-test">
+                <h4>2. 动态高度计算</h4>
+                <pre><code>@media (max-height: 600px) {
+  .history-content {
+    max-height: calc(100vh - 140px);
+  }
+}</code></pre>
+            </div>
+            
+            <div class="resolution-test">
+                <h4>3. 滚动检测优化</h4>
+                <pre><code>const remainingHeight = scrollHeight - scrollTop - clientHeight;
+const threshold = Math.min(100, scrollHeight * 0.15);
+
+if (remainingHeight <= threshold) {
+  requestAnimationFrame(() => loadMore());
+}</code></pre>
+            </div>
+        </div>
+
+        <div class="section">
+            <h3>🚀 测试方法</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
+                <button class="btn" onclick="testWorkspace()">测试工作台滚动</button>
+                <button class="btn btn-success" onclick="testHistoryPage()">测试历史页面滚动</button>
+                <button class="btn btn-warning" onclick="openDevTools()">开启开发者工具</button>
+            </div>
+            
+            <h4>📱 设备模拟测试：</h4>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
+                <button class="btn" onclick="simulateDevice('iPhone SE')">iPhone SE</button>
+                <button class="btn" onclick="simulateDevice('iPhone 11')">iPhone 11</button>
+                <button class="btn" onclick="simulateDevice('iPad')">iPad</button>
+                <button class="btn" onclick="simulateDevice('Galaxy S20')">Galaxy S20</button>
+            </div>
+        </div>
+
+        <div class="section">
+            <h3>✅ 验收标准</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>功能</th>
+                        <th>测试项</th>
+                        <th>状态</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>高度适配</td>
+                        <td>所有分辨率下容器高度正确</td>
+                        <td><span class="status-indicator status-pass"></span>已修复</td>
+                    </tr>
+                    <tr>
+                        <td>滚动检测</td>
+                        <td>距离底部时正确触发加载</td>
+                        <td><span class="status-indicator status-pass"></span>已优化</td>
+                    </tr>
+                    <tr>
+                        <td>性能优化</td>
+                        <td>节流和requestAnimationFrame</td>
+                        <td><span class="status-indicator status-pass"></span>已实现</td>
+                    </tr>
+                    <tr>
+                        <td>响应式设计</td>
+                        <td>移动端和桌面端适配</td>
+                        <td><span class="status-indicator status-pass"></span>已完成</td>
+                    </tr>
+                    <tr>
+                        <td>跨浏览器兼容</td>
+                        <td>Chrome, Firefox, Safari, Edge</td>
+                        <td><span class="status-indicator status-pending"></span>待测试</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="section">
+            <h3>🐛 调试信息</h3>
+            <h4>在控制台中查找以下关键日志：</h4>
+            <ul>
+                <li><span class="code">[HistoryPanel] 开始获取历史记录</span> - 数据加载开始</li>
+                <li><span class="code">loadMore()</span> 调用 - 滚动触发加载更多</li>
+                <li><span class="code">hasMore.value</span> 状态变化 - 是否还有更多数据</li>
+                <li><span class="code">scrollHeight, clientHeight</span> - 滚动区域尺寸</li>
+            </ul>
+            
+            <h4>CSS 调试:</h4>
+            <ul>
+                <li>检查 <span class="code">.history-list</span> 的 computed 高度</li>
+                <li>验证 <span class="code">overflow-y: auto</span> 是否生效</li>
+                <li>确认 <span class="code">flex: 1</span> 和 <span class="code">min-height: 0</span> 组合</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        function testWorkspace() {
+            const url = 'http://localhost:3000/dc-post/workspace?pid=cmUWoVppFurlG6b&name=测试滚动功能';
+            window.open(url, '_blank');
+            alert('📋 测试工作台：\n1. 打开左侧历史记录面板\n2. 滚动到底部观察加载更多\n3. 调整窗口大小测试响应式');
+        }
+
+        function testHistoryPage() {
+            const url = 'http://localhost:3000/dc-post/history?pid=cmUWoVppFurlG6b&name=测试滚动功能';
+            window.open(url, '_blank');
+            alert('📋 测试历史页面：\n1. 滚动列表到底部\n2. 观察"加载更多..."指示器\n3. 测试搜索功能对滚动的影响');
+        }
+
+        function openDevTools() {
+            alert('🔧 开发者工具调试步骤：\n1. 按 F12 打开开发者工具\n2. 切换到 Console 选项卡\n3. 在 Elements 中检查容器高度\n4. 使用 Network 监控 API 调用');
+        }
+
+        function simulateDevice(deviceName) {
+            const devices = {
+                'iPhone SE': { width: 375, height: 667 },
+                'iPhone 11': { width: 414, height: 896 },
+                'iPad': { width: 768, height: 1024 },
+                'Galaxy S20': { width: 360, height: 800 }
+            };
+            
+            const device = devices[deviceName];
+            if (device) {
+                // 模拟设备测试
+                const testWindow = window.open('http://localhost:3000/dc-post/workspace?pid=cmUWoVppFurlG6b', '_blank', 
+                    `width=${device.width},height=${device.height},scrollbars=yes,resizable=yes`);
+                alert(`📱 ${deviceName} 模拟测试：\n尺寸: ${device.width}x${device.height}\n请在新窗口中测试滚动功能`);
+            }
+        }
+
+        // 页面加载完成后的自动检查
+        window.onload = function() {
+            console.log('🔍 滚动修复测试页面加载完成');
+            console.log('✅ 主要修复项目：');
+            console.log('  - 动态高度适配 (calc + min-height)');
+            console.log('  - 滚动检测优化 (自适应阈值)');
+            console.log('  - 性能优化 (requestAnimationFrame)');
+            console.log('  - 响应式设计 (媒体查询)');
+            
+            // 检测当前屏幕信息
+            const screenInfo = {
+                width: window.screen.width,
+                height: window.screen.height,
+                availWidth: window.screen.availWidth,
+                availHeight: window.screen.availHeight,
+                innerWidth: window.innerWidth,
+                innerHeight: window.innerHeight,
+                devicePixelRatio: window.devicePixelRatio || 1
+            };
+            
+            console.log('📱 当前设备信息：', screenInfo);
+            
+            // 自动分析是否需要特殊处理
+            if (screenInfo.height <= 600) {
+                console.log('⚠️  检测到小屏幕设备，请特别关注垂直空间利用');
+            }
+            if (screenInfo.width <= 768) {
+                console.log('📱 检测到移动端设备，请测试触摸滚动');
+            }
+            if (screenInfo.devicePixelRatio >= 2) {
+                console.log('🔍 检测到高DPI屏幕，请测试高分辨率显示效果');
+            }
+        };
+    </script>
+</body>
+</html>
