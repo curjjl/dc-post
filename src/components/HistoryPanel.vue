@@ -343,7 +343,7 @@ const loadMore = async () => {
       await fetchMoreHistory(apiParams, "api");
     }
   } catch (error) {
-    console.error('加载更多数据失败:', error);
+    // console.error('加载更多数据失败:', error);
     currentPage.value -= 1; // 回滚页码
   } finally {
     loadingMore.value = false;
@@ -352,7 +352,7 @@ const loadMore = async () => {
 
 // 选择请求
 const selectRequest = (item) => {
-  console.log('[HistoryPanel] 选择历史记录，ID:', item.fid, '不触发列表刷新');
+  // console.log('[HistoryPanel] 选择历史记录，ID:', item.fid, '不触发列表刷新');
   emit("select-request", item);
   message.success("已加载请求配置");
 };
@@ -393,7 +393,7 @@ const deleteRequest = (item) => {
               api.clearCaches();
             }
           } catch (error) {
-            console.warn('[Cache] 清除缓存失败:', error);
+            // console.warn('[Cache] 清除缓存失败:', error);
           }
           
           // 从本地列表中移除该项
@@ -409,7 +409,7 @@ const deleteRequest = (item) => {
           message.error("删除失败");
         }
       } catch (error) {
-        console.error('删除请求失败:', error);
+        // console.error('删除请求失败:', error);
         message.error("删除失败");
       }
     },
@@ -430,7 +430,7 @@ const clearAllHistory = () => {
         localStorage.removeItem("api_request_history");
         message.success("历史记录已清空");
       } catch (error) {
-        console.error('清空历史记录失败:', error);
+        // console.error('清空历史记录失败:', error);
         message.error("清空失败");
       }
     },
@@ -468,14 +468,14 @@ watch(
     const [newPid, newDir, newRefreshFlag] = newParams;
     const [oldPid, oldDir, oldRefreshFlag] = oldParams || [];
     
-    // 只在开发环境显示详细日志
-    if (import.meta.env.DEV) {
-      console.log("历史面板参数变化:", {
-        pid: { old: oldPid, new: newPid },
-        dir: { old: oldDir, new: newDir },
-        refreshFlag: { old: oldRefreshFlag, new: newRefreshFlag }
-      });
-    }
+    // 显示详细日志
+    // if (import.meta.env.DEV) {
+    //   console.log("历史面板参数变化:", {
+    //     pid: { old: oldPid, new: newPid },
+    //     dir: { old: oldDir, new: newDir },
+    //     refreshFlag: { old: oldRefreshFlag, new: newRefreshFlag }
+    //   });
+    // }
     
     // 检查是否只有refreshFlag发生了变化
     const isRefreshFlagOnly = oldParams && 
@@ -489,10 +489,10 @@ watch(
       newDir !== oldDir;
     
     if (isRefreshFlagOnly) {
-      console.log('[HistoryPanel] 仅刷新标志变化，执行智能刷新');
+      // console.log('[HistoryPanel] 仅刷新标志变化，执行智能刷新');
       handleQueryParamsChange("api", "refresh");
     } else if (isProjectOrDirChanged) {
-      console.log('[HistoryPanel] 项目或目录变化，执行完全重载');
+      // console.log('[HistoryPanel] 项目或目录变化，执行完全重载');
       handleQueryParamsChange();
     }
     // 如果只是id变化（选择历史记录），不做任何处理
@@ -512,7 +512,7 @@ function handleQueryParamsChange(type = "api") {
 
   // 检查是否有必要的参数（pid是必须的）
   if (!props.pid) {
-    console.log('[HistoryPanel] 缺少必要的项目ID，跳过历史记录加载');
+    // console.log('[HistoryPanel] 缺少必要的项目ID，跳过历史记录加载');
     return;
   }
 
@@ -524,11 +524,11 @@ function handleQueryParamsChange(type = "api") {
     const isRefreshTriggered = arguments[1] === 'refresh';
     
     if (isRefreshTriggered && historyList.value.length > 0) {
-      console.log('[HistoryPanel] 执行智能刷新');
+      // console.log('[HistoryPanel] 执行智能刷新');
       // 智能刷新：仅获取最新的记录
       fetchHistory(apiParams, type, true);
     } else {
-      console.log('[HistoryPanel] 执行完全重载');
+      // console.log('[HistoryPanel] 执行完全重载');
       // 完全重载：重置分页状态
       currentPage.value = 1;
       hasMore.value = true;
@@ -549,7 +549,7 @@ async function fetchHistory(apiParams, type, isRefresh = false) {
       historyList.value = [];
     }
     
-    console.log(`[HistoryPanel] 开始获取历史记录 - 刷新模式: ${shouldSmartRefresh ? '智能刷新' : '完全重载'}`);
+    // console.log(`[HistoryPanel] 开始获取历史记录 - 刷新模式: ${shouldSmartRefresh ? '智能刷新' : '完全重载'}`);
     
     // 强制清除相关API缓存
     try {
@@ -557,7 +557,7 @@ async function fetchHistory(apiParams, type, isRefresh = false) {
         api.clearCaches();
       }
     } catch (error) {
-      console.warn('[Cache] 清除缓存失败:', error);
+      // console.warn('[Cache] 清除缓存失败:', error);
     }
     
     const filterObj = {
@@ -634,7 +634,7 @@ async function fetchHistory(apiParams, type, isRefresh = false) {
               newItems.push(historyItem);
             }
           } catch (parseError) {
-            console.warn('解析历史记录失败:', parseError);
+            // console.warn('解析历史记录失败:', parseError);
           }
         }
       });
@@ -650,10 +650,10 @@ async function fetchHistory(apiParams, type, isRefresh = false) {
           
           // 如果有新记录，显示成功提示
           if (newItems.length > 0) {
-            console.log(`历史面板智能刷新成功，新增 ${newItems.length} 条记录`);
+            // console.log(`历史面板智能刷新成功，新增 ${newItems.length} 条记录`);
           }
         } catch (error) {
-          console.warn('智能刷新失败，回退到完全重载:', error);
+          // console.warn('智能刷新失败，回退到完全重载:', error);
           historyList.value = newItems;
         }
       } else {
@@ -670,7 +670,7 @@ async function fetchHistory(apiParams, type, isRefresh = false) {
   } catch (error) {
     loading.value = false;
     isInitialLoad.value = false;
-    console.error("获取历史记录失败:", error.userMessage || error.message);
+    // console.error("获取历史记录失败:", error.userMessage || error.message);
   }
 }
 
@@ -736,7 +736,7 @@ async function fetchMoreHistory(apiParams, type) {
               newItems.push(historyItem);
             }
           } catch (parseError) {
-            console.warn('解析历史记录失败:', parseError);
+            // console.warn('解析历史记录失败:', parseError);
           }
         }
       });
@@ -750,7 +750,7 @@ async function fetchMoreHistory(apiParams, type) {
       hasMore.value = false;
     }
   } catch (error) {
-    console.error("加载更多历史记录失败:", error.userMessage || error.message);
+    // console.error("加载更多历史记录失败:", error.userMessage || error.message);
     hasMore.value = false;
   }
 }

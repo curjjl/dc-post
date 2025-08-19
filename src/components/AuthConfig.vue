@@ -6,7 +6,7 @@
           <a-select-option value="none">无认证</a-select-option>
           <a-select-option value="basic">Basic Auth</a-select-option>
           <a-select-option value="bearer">Bearer Token</a-select-option>
-          <a-select-option value="oauth2">OAuth 2.0</a-select-option>
+          <!-- <a-select-option value="oauth2">OAuth 2.0</a-select-option> -->
         </a-select>
       </a-form-item>
 
